@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Projects | {{ name }}{% endblock %}
+
+{% block content %}
+<section
+    class="content-section projects-section"
+    id="projects"
+    aria-labelledby="projects-title"
+>
+    <div class="container">
+        <header class="section-heading">
+            <p class="section-kicker">Selected work</p>
+            <h1 id="projects-title">Projects &amp; Collaborations</h1>
+            <p>
+                Selected university work at the intersection of data,
+                artificial intelligence, and business.
+            </p>
+        </header>
+
+        <div class="project-grid">
+            {% for project in project_list %}
+                <article class="project-card{% if project.is_featured %} project-card-featured{% endif %}">
+                    <div class="project-header">
+                        <p class="project-company">
+                            {{ project.organization }}
+                        </p>
+
+                        {% if project.context_label %}
+                            <p class="project-context">
+                                {{ project.context_label }}
+                            </p>
+                        {% endif %}
+                    </div>
+
+                    <h2>{{ project.title }}</h2>
+
+                    <p class="project-summary">
+                        {{ project.summary }}
+                    </p>
+
+                    {% if project.award %}
+                        <p class="award-badge">{{ project.award }}</p>
+                    {% endif %}
+
+                    {% with technologies=project.technology_list %}
+                        {% if technologies %}
+                            <ul
+                                class="tag-list"
+                                aria-label="Technologies and topics for {{ project.title }}"
+                            >
+                                {% for technology in technologies %}
+                                    <li>{{ technology }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endwith %}
+
+                    <details class="project-details">
+                        <summary>My contribution</summary>
+                        <p>{{ project.contribution|linebreaksbr }}</p>
+                    </details>
+                </article>
+            {% empty %}
+                <p class="empty-state">
+                    No projects have been added yet.
+                </p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

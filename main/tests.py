@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from main.models import Experience
+from main.models import Experience, Project
 
 
 class MainTest(TestCase):
@@ -56,3 +56,45 @@ class MainTest(TestCase):
         self.assertFalse(self.experience.is_ongoing)
         self.assertContains(response, "Completed")
         self.assertNotContains(response, "Ongoing")
+
+class ProjectPageTests(TestCase):
+    def setUp(self):
+        self.project = Project.objects.create(
+            title="Example Analytics Project",
+            organization="Example University",
+            context_label="University project",
+            summary="An analysis of example business data.",
+            contribution="I prepared and evaluated the data.",
+            technologies="Python\nSQL",
+        )
+
+    def test_projects_page_displays_model_data(self):
+        response = self.client.get(reverse("main:show_projects"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "projects.html")
+        self.assertContains(response, self.project.title)
+        self.assertContains(response, self.project.organization)
+        self.assertContains(response, self.project.summary)
+        self.assertContains(response, self.project.contribution)
+        self.assertContains(response, "Python")
+        self.assertContains(response, "SQL")
+
+    def test_empty_projects_page(self):
+        Project.objects.all().delete()
+
+        response = self.client.get(reverse("main:show_projects"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No projects have been added yet.")
+
+    def test_existing_pages_link_to_projects(self):
+        for route in ("main:show_main", "main:show_experience"):
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(
+                    response,
+                    f'href="{reverse("main:show_projects")}"',
+                )

@@ -1,339 +1,147 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta
-        name="description"
-        content="Portfolio of Marcel Mikula, Business Information Systems student with a focus on Data and AI."
-    >
-
-    <title>{{ name }} - Portfolio</title>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap"
-        rel="stylesheet"
-    >
-
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-</head>
-
-<body>
-    <a class="skip-link" href="#main-content">Skip to content</a>
-
-    <header class="site-header">
-        <div class="container">
-            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-
-            <nav aria-label="Main navigation">
-                <a href="{% url 'main:show_main' %}#profile">Profile</a>
-                <a href="{% url 'main:show_main' %}#projects">Projects</a>
-                <a href="{% url 'main:show_experience' %}">Experience</a>
-                <a href="{% url 'main:show_main' %}#education">Education</a>
-                <a href="{% url 'main:show_main' %}#skills">Skills</a>
-            </nav>
-
-        </div>
-    </header>
-
-    <main id="main-content">
-        <section
-            class="hero"
-            id="profile"
-            aria-labelledby="profile-title"
-        >
-            <div class="container hero-grid">
-                <div class="hero-identity">
-                    <p class="hero-kicker">
-                        Business Information Systems &middot; Data &amp; AI
-                    </p>
-
-                    <h1 id="profile-title">
-                        {{ name }}
-                    </h1>
-                </div>
-
-                <div class="hero-photo">
-                    <div class="photo-block"></div>
-
-                    <img
-                        class="avatar"
-                        src="{% static 'img/Download.jpeg' %}"
-                        alt="Portrait of {{ name }}"
-                    >
-                </div>
-
-                <div class="hero-details">
-                    <p class="bio">
-                        <!-- I am a Business Information Systems master's student at
-                        TU Darmstadt and currently an exchange student at
-                        Universitas Indonesia, where I study at both the Faculty
-                        of Computer Science and the Faculty of Economics and
-                        Business. My academic interests focus on data, artificial
-                        intelligence, and their application to business problems. -->
-                        {{ bio }}
-                    </p>
-
-                    <dl class="meta-list">
-                        <div class="meta-row">
-                            <dt>NPM</dt>
-                            <dd>{{ npm }}</dd>
-                        </div>
-
-                        <div class="meta-row">
-                            <dt>Program</dt>
-                            <dd>{{ study_program }}</dd>
-                        </div>
-
-                        <div class="meta-row">
-                            <dt>Current university</dt>
-                            <dd>Universitas Indonesia</dd>
-                        </div>
-                    </dl>
-
-                    <div class="social-links">
-                        <a
-                            href="https://github.com/Marcelm1806"
-                            class="social-link"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            GitHub
-                        </a>
-
-                        <a
-                            href="https://www.linkedin.com/in/marcel-mikula-6b927a227/"
-                            class="social-link"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            LinkedIn
-                        </a>
-
-                        <a
-                            href="mailto:marcel.mikula@web.com"
-                            class="social-link"
-                        >
-                            Email
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section
-            class="content-section projects-section"
-            id="projects"
-            aria-labelledby="projects-title"
-        >
-            <div class="container">
-                <header class="section-heading">
-                    <p class="section-kicker">Selected work</p>
-                    <h2 id="projects-title">Projects &amp; Collaborations</h2>
-                    <p>
-                        Selected university work at the intersection of data,
-                        artificial intelligence, and business.
-                    </p>
-                </header>
-
-                <div class="project-grid">
-                    <article class="project-card project-card-featured">
-                        <div class="project-header">
-                            <p class="project-company">Porsche</p>
-                            <p class="project-context">University project</p>
-                        </div>
-
-                        <h3>Macan After-Sales Field-Quality Analytics</h3>
-
-                        <p class="project-summary">
-                            A university project conducted in collaboration with
-                            Porsche, focused on identifying and prioritizing
-                            field-quality patterns from diagnostic trouble-code
-                            data in the Macan after-sales context.
-                        </p>
-
-                        <p class="award-badge">
-                            Best Data Insight
-                        </p>
-
-                        <ul
-                            class="tag-list"
-                            aria-label="Methods used in the Porsche project"
-                        >
-                            <li>Co-occurrence Analysis</li>
-                            <li>DTC Data</li>
-                            <li>Field Quality</li>
-                        </ul>
-
-                        <details class="project-details">
-                            <summary>My contribution</summary>
-
-                            <p>
-                                I developed the co-occurrence analysis and was
-                                one of two members who presented the results of
-                                our six-person team to Porsche's After-Sales and
-                                Data Science teams. The project received the
-                                Best Data Insight Award.
-                            </p>
-                        </details>
-                    </article>
-
-                    <article class="project-card">
-                        <div class="project-header">
-                            <p class="project-company">ING</p>
-                            <p class="project-context">
-                                Master seminar &middot; April&ndash;July 2025
-                            </p>
-                        </div>
-
-                        <h3>Explaining Explainable AI for Stakeholders</h3>
-
-                        <p class="project-summary">
-                            A master seminar project with ING examining how
-                            explainable artificial intelligence can communicate
-                            model behavior to different stakeholder groups.
-                        </p>
-
-                        <ul
-                            class="tag-list"
-                            aria-label="Methods used in the ING project"
-                        >
-                            <li>Neural Networks</li>
-                            <li>SHAP</li>
-                            <li>UI Prototyping</li>
-                        </ul>
-
-                        <details class="project-details">
-                            <summary>My contribution</summary>
-
-                            <p>
-                                I built a neural network, implemented SHAP-based
-                                explanations, developed a UI prototype, and
-                                presented the project results.
-                            </p>
-                        </details>
-                    </article>
-
-                    <article class="project-card">
-                        <div class="project-header">
-                            <p class="project-company">
-                                University of Mannheim
-                            </p>
-                            <p class="project-context">
-                                Bachelor's thesis &middot; 2025
-                            </p>
-                        </div>
-
-                        <h3>
-                            Enhancing Anomaly Detection in Object-Centric
-                            Process Mining through Novel Feature Engineering
-                        </h3>
-
-                        <p class="project-summary">
-                            Research into feature-engineering approaches for
-                            anomaly detection in object-centric process mining.
-                        </p>
-
-                        <ul
-                            class="tag-list"
-                            aria-label="Topics covered in the bachelor's thesis"
-                        >
-                            <li>Process Mining</li>
-                            <li>Feature Engineering</li>
-                            <li>Anomaly Detection</li>
-                        </ul>
-
-                        <details class="project-details">
-                            <summary>Research focus</summary>
-
-                            <p>
-                                I investigated whether novel feature-engineering
-                                approaches could improve anomaly detection in
-                                object-centric process mining.
-                            </p>
-                        </details>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section
-            class="content-section education-section"
-            id="education"
-            aria-labelledby="education-title"
-        >
-            <div class="container">
-                <header class="section-heading">
-                    <p class="section-kicker">Academic background</p>
-                    <h2 id="education-title">Education</h2>
-                </header>
-
-                <div class="education-grid">
-                    <article class="education-card">
-                        <p class="education-year">2026</p>
-                        <h3>Universitas Indonesia</h3>
-                        <p class="education-degree">Exchange Semester</p>
-                        <p>
-                            Faculty of Computer Science and Faculty of Economics
-                            and Business
-                        </p>
-                    </article>
-
-                    <article class="education-card">
-                        <p class="education-year">2024&ndash;Present</p>
-                        <h3>Technical University of Darmstadt</h3>
-                        <p class="education-degree">
-                            M.Sc. Business Information Systems
-                        </p>
-                    </article>
-
-                    <article class="education-card">
-                        <p class="education-year">2020&ndash;2025</p>
-                        <h3>University of Mannheim</h3>
-                        <p class="education-degree">
-                            B.Sc. Business Information Systems
-                        </p>
-                    </article>
-                </div>
-            </div>
-        </section>
-
-        <section
-            class="content-section skills-section"
-            id="skills"
-            aria-labelledby="skills-title"
-        >
-            <div class="container">
-                <header class="section-heading">
-                    <p class="section-kicker">Focus</p>
-                    <h2 id="skills-title">Data &amp; AI</h2>
-                    <p>
-                        Technologies and topics I have worked with through
-                        university and project experience.
-                    </p>
-                </header>
-
-                <ul class="skill-list">
-                    <li>Python</li>
-                    <li>Machine Learning</li>
-                    <li>Process Mining</li>
-                    <li>XAI</li>
-                </ul>
-            </div>
-        </section>
-    </main>
-
-    <footer class="site-footer">
-        <div class="container">
-            <p>
-                &copy; 2026 {{ name }}. Built for Platform-Based
-                Programming at Universitas Indonesia.
+{% block content %}
+<section
+    class="hero"
+    id="profile"
+    aria-labelledby="profile-title"
+>
+    <div class="container hero-grid">
+        <div class="hero-identity">
+            <p class="hero-kicker">
+                Business Information Systems &middot; Data &amp; AI
             </p>
+
+            <h1 id="profile-title">
+                {{ name }}
+            </h1>
         </div>
-    </footer>
-</body>
-</html>
+
+        <div class="hero-photo">
+            <div class="photo-block"></div>
+
+            <img
+                class="avatar"
+                src="{% static 'img/Download.jpeg' %}"
+                alt="Portrait of {{ name }}"
+            >
+        </div>
+
+        <div class="hero-details">
+            <p class="bio">
+                {{ bio }}
+            </p>
+
+            <dl class="meta-list">
+                <div class="meta-row">
+                    <dt>NPM</dt>
+                    <dd>{{ npm }}</dd>
+                </div>
+
+                <div class="meta-row">
+                    <dt>Program</dt>
+                    <dd>{{ study_program }}</dd>
+                </div>
+
+                <div class="meta-row">
+                    <dt>Current university</dt>
+                    <dd>Universitas Indonesia</dd>
+                </div>
+            </dl>
+
+            <div class="social-links">
+                <a
+                    href="https://github.com/Marcelm1806"
+                    class="social-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    GitHub
+                </a>
+
+                <a
+                    href="https://www.linkedin.com/in/marcel-mikula-6b927a227/"
+                    class="social-link"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    LinkedIn
+                </a>
+
+                <a
+                    href="mailto:marcel.mikula@web.com"
+                    class="social-link"
+                >
+                    Email
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section
+    class="content-section education-section"
+    id="education"
+    aria-labelledby="education-title"
+>
+    <div class="container">
+        <header class="section-heading">
+            <p class="section-kicker">Academic background</p>
+            <h2 id="education-title">Education</h2>
+        </header>
+
+        <div class="education-grid">
+            <article class="education-card">
+                <p class="education-year">2026</p>
+                <h3>Universitas Indonesia</h3>
+                <p class="education-degree">Exchange Semester</p>
+                <p>
+                    Faculty of Computer Science and Faculty of Economics
+                    and Business
+                </p>
+            </article>
+
+            <article class="education-card">
+                <p class="education-year">2024&ndash;Present</p>
+                <h3>Technical University of Darmstadt</h3>
+                <p class="education-degree">
+                    M.Sc. Business Information Systems
+                </p>
+            </article>
+
+            <article class="education-card">
+                <p class="education-year">2020&ndash;2025</p>
+                <h3>University of Mannheim</h3>
+                <p class="education-degree">
+                    B.Sc. Business Information Systems
+                </p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section
+    class="content-section skills-section"
+    id="skills"
+    aria-labelledby="skills-title"
+>
+    <div class="container">
+        <header class="section-heading">
+            <p class="section-kicker">Focus</p>
+            <h2 id="skills-title">Data &amp; AI</h2>
+            <p>
+                Technologies and topics I have worked with through
+                university and project experience.
+            </p>
+        </header>
+
+        <ul class="skill-list">
+            <li>Python</li>
+            <li>Machine Learning</li>
+            <li>Process Mining</li>
+            <li>XAI</li>
+        </ul>
+    </div>
+</section>
+{% endblock %}
