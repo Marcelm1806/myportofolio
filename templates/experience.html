@@ -28,7 +28,6 @@
     <header class="site-header">
         <div class="container">
             <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
-
             <nav aria-label="Main navigation">
                 <a href="{% url 'main:show_main' %}#profile">Profile</a>
                 <a href="{% url 'main:show_main' %}#projects">Projects</a>
@@ -39,7 +38,7 @@
         </div>
     </header>
 
-    <main>
+    <main id="main-content">
     <section class="experience-section" id="experience">
         <div class="container">
             <p class="section-kicker">My journey so far</p>
