@@ -10,7 +10,7 @@
         content="Portfolio of Marcel Mikula, Business Information Systems student with a focus on Data and AI."
     >
 
-    <title>Marcel Mikula | Portfolio</title>
+    <title>{{ name }} - Portfolio</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,15 +27,16 @@
 
     <header class="site-header">
         <div class="container">
-            <a href="#profile" class="brand">Marcel Mikula</a>
+            <a href="{% url 'main:show_main' %}" class="brand">{{ name }}</a>
 
             <nav aria-label="Main navigation">
-                <a href="#profile">Profile</a>
-                <a href="#projects">Projects</a>
-                <a href="#experience">Experience</a>
-                <a href="#education">Education</a>
-                <a href="#skills">Skills</a>
+                <a href="{% url 'main:show_main' %}#profile">Profile</a>
+                <a href="{% url 'main:show_main' %}#projects">Projects</a>
+                <a href="{% url 'main:show_experience' %}">Experience</a>
+                <a href="{% url 'main:show_main' %}#education">Education</a>
+                <a href="{% url 'main:show_main' %}#skills">Skills</a>
             </nav>
+
         </div>
     </header>
 
@@ -52,7 +53,7 @@
                     </p>
 
                     <h1 id="profile-title">
-                        Marcel<br>Mikula
+                        {{ name }}
                     </h1>
                 </div>
 
@@ -62,29 +63,30 @@
                     <img
                         class="avatar"
                         src="{% static 'img/Download.jpeg' %}"
-                        alt="Portrait of Marcel Mikula"
+                        alt="Portrait of {{ name }}"
                     >
                 </div>
 
                 <div class="hero-details">
                     <p class="bio">
-                        I am a Business Information Systems master's student at
+                        <!-- I am a Business Information Systems master's student at
                         TU Darmstadt and currently an exchange student at
                         Universitas Indonesia, where I study at both the Faculty
                         of Computer Science and the Faculty of Economics and
                         Business. My academic interests focus on data, artificial
-                        intelligence, and their application to business problems.
+                        intelligence, and their application to business problems. -->
+                        {{ bio }}
                     </p>
 
                     <dl class="meta-list">
                         <div class="meta-row">
                             <dt>NPM</dt>
-                            <dd>2606816592</dd>
+                            <dd>{{ npm }}</dd>
                         </div>
 
                         <div class="meta-row">
                             <dt>Program</dt>
-                            <dd>M.Sc. Business Information Systems</dd>
+                            <dd>{{ study_program }}</dd>
                         </div>
 
                         <div class="meta-row">
@@ -378,7 +380,7 @@
     <footer class="site-footer">
         <div class="container">
             <p>
-                &copy; 2026 Marcel Mikula. Built for Platform-Based
+                &copy; 2026 {{ name }}. Built for Platform-Based
                 Programming at Universitas Indonesia.
             </p>
         </div>
