@@ -1,0 +1,47 @@
+[
+    {
+        "model": "main.project",
+        "pk": "73cd12c7-c229-465b-91a8-4ba07ae49b86",
+        "fields": {
+            "title": "Macan After-Sales Field-Quality Analytics",
+            "organization": "Porsche",
+            "context_label": "University project",
+            "summary": "A university project conducted in collaboration with Porsche, focused on identifying and prioritizing field-quality patterns from diagnostic trouble-code data in the Macan after-sales context.",
+            "contribution": "I developed the co-occurrence analysis and was one of two members who presented the results of our six-person team to Porsche's After-Sales and Data Science teams. The project received the Best Data Insight Award.",
+            "technologies": "Co-occurrence Analysis\nDTC Data\nField Quality",
+            "award": "Best Data Insight",
+            "is_featured": true,
+            "display_order": 0
+        }
+    },
+    {
+        "model": "main.project",
+        "pk": "523e457d-26df-4715-a9f0-abdcf5f8e57a",
+        "fields": {
+            "title": "Explaining Explainable AI for Stakeholders",
+            "organization": "ING",
+            "context_label": "Master seminar · April–July 2025",
+            "summary": "A master seminar project with ING examining how explainable artificial intelligence can communicate model behavior to different stakeholder groups.",
+            "contribution": "I built a neural network, implemented SHAP-based explanations, developed a UI prototype, and presented the project results.",
+            "technologies": "Neural Networks\nSHAP\nUI Prototyping",
+            "award": "",
+            "is_featured": false,
+            "display_order": 1
+        }
+    },
+    {
+        "model": "main.project",
+        "pk": "838efba7-db80-41b6-97f8-0e7588a6abbc",
+        "fields": {
+            "title": "Enhancing Anomaly Detection in Object-Centric Process Mining through Novel Feature Engineering",
+            "organization": "University of Mannheim",
+            "context_label": "Bachelor's thesis · 2025",
+            "summary": "Research into feature-engineering approaches for anomaly detection in object-centric process mining.",
+            "contribution": "I investigated whether novel feature-engineering approaches could improve anomaly detection in object-centric process mining.",
+            "technologies": "Process Mining\nFeature Engineering\nAnomaly Detection",
+            "award": "",
+            "is_featured": false,
+            "display_order": 2
+        }
+    }
+]

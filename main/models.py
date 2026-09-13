@@ -1,11 +1,12 @@
 import uuid
 
 from django.db import models
-
-# Create your models here.
+from django.utils import timezone
 
 
 class Experience(models.Model):
+    """A professional experience with its period and responsibilities."""
+
     EXPERIENCE_CHOICES = [
         ("internship", "Internship"),
         ("research", "Research"),
@@ -13,18 +14,25 @@ class Experience(models.Model):
         ("part-time", "Part-Time"),
         ("full-time", "Full-Time"),
         ("freelance", "Freelance"),
+        ("intern-working", "Intern & Working Student"),
     ]
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
     title = models.CharField(max_length=255)
+    organization = models.CharField(max_length=255, blank=True)
     description = models.TextField()
+    role_timeline = models.CharField(max_length=255, blank=True)
     category = models.CharField(
         max_length=20,
         choices=EXPERIENCE_CHOICES,
         default="full-time",
     )
     thumbnail = models.URLField(blank=True, null=True)
-    started_at = models.DateTimeField(auto_now_add=True)
+    started_at = models.DateTimeField(default=timezone.now)
     ended_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
@@ -33,6 +41,16 @@ class Experience(models.Model):
     @property
     def is_ongoing(self):
         return self.ended_at is None
+
+    @property
+    def responsibility_list(self):
+        """Return one responsibility per non-empty description line."""
+        return [
+            line.strip()
+            for line in self.description.splitlines()
+            if line.strip()
+        ]
+
 
 class Project(models.Model):
     """A portfolio project with content for its list and detail pages."""

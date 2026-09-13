@@ -60,6 +60,13 @@
                         <summary>My contribution</summary>
                         <p>{{ project.contribution|linebreaksbr }}</p>
                     </details>
+                    <a
+                    href="{% url 'main:show_project_detail' project.id %}"
+                    class="project-link"
+                    aria-label="View project: {{ project.title }}"
+                    >
+                    View project &rarr;
+                </a>
                 </article>
             {% empty %}
                 <p class="empty-state">

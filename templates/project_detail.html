@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.title }} | {{ name }}{% endblock %}
+
+{% block content %}
+<section
+    class="content-section project-detail-page"
+    aria-labelledby="project-title"
+>
+    <div class="container">
+        <a
+            href="{% url 'main:show_projects' %}"
+            class="project-link project-back-link"
+        >
+            &larr; All projects
+        </a>
+
+        <header class="section-heading">
+            <p class="section-kicker">{{ project.organization }}</p>
+
+            <h1 id="project-title">{{ project.title }}</h1>
+
+            {% if project.context_label %}
+                <p class="project-context-label">
+                    {{ project.context_label }}
+                </p>
+            {% endif %}
+
+            <p>{{ project.summary }}</p>
+        </header>
+
+        {% if project.award %}
+            <p class="award-badge">{{ project.award }}</p>
+        {% endif %}
+
+        <div class="project-detail-body">
+            <h2>My contribution</h2>
+            <p>{{ project.contribution|linebreaksbr }}</p>
+
+            {% with technologies=project.technology_list %}
+                {% if technologies %}
+                    <h2>Technologies &amp; topics</h2>
+
+                    <ul class="tag-list">
+                        {% for technology in technologies %}
+                            <li>{{ technology }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</section>
+{% endblock %}

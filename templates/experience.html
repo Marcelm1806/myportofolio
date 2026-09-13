@@ -4,32 +4,68 @@
 
 {% block content %}
 <section
-    class="experience-section"
+    class="content-section experience-page"
     id="experience"
     aria-labelledby="experience-title"
 >
     <div class="container">
-        <p class="section-kicker">My journey so far</p>
-        <h1 id="experience-title">Experience</h1>
+        <header class="section-heading">
+            <p class="section-kicker">Professional background</p>
+            <h1 id="experience-title">Experience</h1>
+        </header>
 
         <div class="experience-grid">
             {% for experience in experience_list %}
                 <article class="experience-card">
-                    <span class="experience-category">
+                    <div class="experience-heading">
+                        <div>
+                            {% if experience.organization %}
+                                <p class="project-company">
+                                    {{ experience.organization }}
+                                </p>
+                            {% endif %}
+
+                            <h2>{{ experience.title }}</h2>
+                        </div>
+
+                        <p class="experience-date">
+                            {{ experience.started_at|date:"F Y" }}
+                            &ndash;
+                            {% if experience.ended_at %}
+                                {{ experience.ended_at|date:"F Y" }}
+                            {% else %}
+                                Present
+                            {% endif %}
+                        </p>
+                    </div>
+
+                    <p class="experience-role">
                         {{ experience.get_category_display }}
-                    </span>
-
-                    <h2>{{ experience.title }}</h2>
-
-                    <p class="experience-description">
-                        {{ experience.description }}
                     </p>
 
-                    {% if experience.is_ongoing %}
-                        <p class="experience-status">Ongoing</p>
-                    {% else %}
-                        <p class="experience-status">Completed</p>
+                    {% if experience.role_timeline %}
+                        <p class="experience-timeline">
+                            {{ experience.role_timeline }}
+                        </p>
                     {% endif %}
+
+                    {% with responsibilities=experience.responsibility_list %}
+                        {% if responsibilities %}
+                            <ul class="experience-list">
+                                {% for responsibility in responsibilities %}
+                                    <li>{{ responsibility }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    {% endwith %}
+
+                    <p class="experience-status">
+                        {% if experience.is_ongoing %}
+                            Ongoing
+                        {% else %}
+                            Completed
+                        {% endif %}
+                    </p>
                 </article>
             {% empty %}
                 <p class="empty-state">

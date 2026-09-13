@@ -813,3 +813,68 @@ summary:focus-visible {
     font-size: 0.85rem;
     font-weight: 600;
 }
+/* ---------- Project links and detail pages ---------- */
+
+.project-link {
+    display: inline-block;
+    width: fit-content;
+    margin-top: 1.25rem;
+    color: var(--accent-dark);
+    font-weight: 700;
+    text-underline-offset: 0.2em;
+}
+
+.project-card-featured .project-link {
+    color: var(--accent-light);
+}
+
+.project-back-link {
+    margin-top: 0;
+    margin-bottom: 2rem;
+}
+
+.project-detail-page .section-heading {
+    max-width: 850px;
+}
+
+.project-context-label {
+    margin-bottom: 1rem;
+    color: var(--text-muted);
+}
+
+.project-detail-body {
+    max-width: 760px;
+}
+
+.project-detail-body h2 {
+    margin: 2rem 0 0.75rem;
+    font-size: 1.5rem;
+}
+
+.project-detail-body > p {
+    color: var(--text-muted);
+}
+
+/* ---------- Professional experience page ---------- */
+
+.experience-page .experience-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+}
+
+.experience-page .experience-card {
+    padding: clamp(1.35rem, 3vw, 2rem);
+    background-color: var(--surface);
+    border-left: 6px solid var(--accent);
+    border-radius: var(--radius-large);
+}
+
+.experience-page .experience-heading h2 {
+    margin: 0.25rem 0 0;
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    line-height: 1.2;
+}
+
+.experience-page .experience-status {
+    color: var(--text-muted);
+}

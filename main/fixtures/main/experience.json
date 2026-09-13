@@ -1,0 +1,16 @@
+[
+    {
+        "model": "main.experience",
+        "pk": "d722d16e-eeda-4246-a17b-2bd90efd8c3c",
+        "fields": {
+            "title": "Corporate PMO IT",
+            "organization": "B. Braun",
+            "description": "Supported a broad range of operational and analytical tasks within Corporate PMO IT.\nAutomated recurring processes, including a reporting overview of license costs.\nBuilt Power BI dashboards for internal reporting.",
+            "role_timeline": "Internship: September 2022–February 2023 · Working student: March–August 2023",
+            "category": "intern-working",
+            "thumbnail": null,
+            "started_at": "2022-09-01T00:00:00Z",
+            "ended_at": "2023-08-01T00:00:00Z"
+        }
+    }
+]
