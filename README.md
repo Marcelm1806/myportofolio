@@ -2,7 +2,7 @@
 
 A responsive personal portfolio developed for Platform-Based Programming at the Faculty of Computer Science, Universitas Indonesia.
 
-The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 adds a project overview, individual project pages, and reusable page templates.
+The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation.
 
 [Assignment 1 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-1.html) · [Assignment 2 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-2.html)
 
@@ -24,7 +24,10 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 - Empty states for the project and experience lists
 - A 404 response for a project ID that does not exist
 - Versioned fixtures for loading three projects and one experience entry
-- Fourteen automated tests covering models, pages, navigation, empty states, and fixture reloading
+- A model-based project form with validation, CSRF protection, and success messages
+- Project title search and JSON/XML endpoints with the same filter
+- A native popover for confirming deletion through a CSRF-protected POST
+- Twenty-eight automated tests covering the existing portfolio and the new form/data-delivery behavior
 
 The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, Flexbox, CSS variables, and `clamp()`; no frontend framework or JavaScript library is required.
 
@@ -34,6 +37,11 @@ The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, F
 | --- | --- | --- |
 | Home | `/` | Profile, education, and Data & AI |
 | Projects | `/projects/` | All project records from the database |
+| Title search | `/projects/?title=macan` | Case-insensitive matching on project titles |
+| Add project | `/projects/add/` | GET displays the form; a valid POST creates a record |
+| Projects as JSON | `/api/projects/` | Serialized project records; supports `?title=...` |
+| Projects as XML | `/api/projects/xml/` | The same records and filter represented as XML |
+| Delete project | `/projects/<uuid>/delete/` | POST only; linked through the confirmation popover |
 | Project detail | `/projects/<uuid>/` | One selected project |
 | Experience | `/experience/` | Professional experience from the database |
 | Education | `/#education` | Education section on the home page |
@@ -52,29 +60,34 @@ The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and 
 | `portofolio/settings.py` | Project configuration, database selection, templates, and static files |
 | `portofolio/urls.py` | Project-level routing, including the `main` application's URLs |
 | `main/models.py` | The `Experience` and `Project` models |
+| `main/forms.py` | `ProjectForm`, using the existing Project fields |
 | `main/views.py` | Profile context and views for the home, experience, project list, and project detail pages |
 | `main/urls.py` | Named routes in the `main` namespace |
 | `main/tests.py` | Automated model, page, and fixture tests |
+| `main/tests_tutorial3.py` | Creation, deletion, CSRF, filtering, JSON, and XML tests |
 | `main/migrations/` | Versioned database schema changes |
 | `main/fixtures/main/projects.json` | Three portfolio project records |
 | `main/fixtures/main/experience.json` | The B. Braun experience record |
 | `templates/base.html` | Shared document structure, navigation, footer, and content block |
 | `templates/index.html` | Profile, education, and Data & AI content |
 | `templates/projects.html` | Project list and empty state |
+| `templates/projects_form.html` | Project creation form, help text, and validation errors |
+| `templates/components/project_delete_modal.html` | Reusable deletion confirmation popover |
 | `templates/project_detail.html` | Individual project content |
 | `templates/experience.html` | Experience list and empty state |
 | `static/css/style.css` | Shared styling and responsive rules |
+| `static/css/tutorial3.css` | Form, search, message, and confirmation styles using the existing design tokens |
 | `static/img/Download.jpeg` | Profile photograph |
 | `manage.py` | Django management commands |
 
 ## Local Setup
 
-These instructions are for a fresh checkout of the Assignment 2 branch. Install Python 3.13 and Git first.
+These instructions are for a fresh checkout of the Tutorial 3 branch. Install Python 3.13 and Git first.
 
 1. Clone the branch and enter the repository:
 
    ```bash
-   git clone --branch feature/assignment_2_projects https://github.com/Marcelm1806/myportofolio.git
+   git clone --branch feature/tutorial_3_forms https://github.com/Marcelm1806/myportofolio.git
    cd myportofolio
    ```
 
@@ -151,11 +164,13 @@ To update the versioned portfolio content, edit the relevant fixture and reload 
 
 ### Current Scope
 
-Projects and experience are rendered from database records. Profile values are supplied by the view, while education and skills remain in the home template. Content can currently be maintained through fixtures or the Django shell. A portfolio editing interface and project filters are possible future extensions.
+Projects and experience are rendered from database records. Profile values are supplied by the view, while education and skills remain in the home template. Projects can be created and deleted through the browser, searched by title, and inspected as JSON or XML. Updating an existing project through a form is a possible future extension; fixtures and the Django shell remain available for content maintenance.
+
+Authentication and ownership checks are not implemented at this tutorial stage. Anyone who can reach the application can use its create/delete forms. CSRF checks protect against cross-site request forgery; they do not decide who is allowed to manage a portfolio. Public deployment with editing enabled needs an authorization design in a later iteration.
 
 ## Testing and Verification
 
-The last recorded local run completed **14 tests successfully**:
+The Assignment 2 baseline completed **14 tests successfully** on my Mac. Tutorial 3 adds **14 tests**, giving **28 tests** in the current code. The new suite must be run locally before submission; the previous 14-test result does not verify the new implementation.
 
 | Test group | Count | Coverage |
 | --- | --- | --- |
@@ -164,6 +179,8 @@ The last recorded local run completed **14 tests successfully**:
 | Project detail tests | 3 | Selected project content, missing project ID, and detail links from the list |
 | Project fixture test | 1 | Loading twice without duplicates while preserving an independently created project |
 | Experience history test | 1 | Saving and displaying historical dates, organization, timeline, and responsibilities |
+| Tutorial 3 write tests | 9 | Creation, invalid input, redirect behavior, preservation of other records, CSRF, deletion, missing IDs, and HTTP methods |
+| Tutorial 3 data-delivery tests | 5 | JSON structure and ordering, shared title filtering, distinct empty states, XML content, and read-only endpoints |
 
 Run the full suite and development checks with:
 
@@ -173,7 +190,7 @@ python manage.py makemigrations --check --dry-run
 git diff --check
 ```
 
-The recorded results were 14 passing tests, `No changes detected`, and no whitespace errors. The local test run also printed a warning about the missing collected `staticfiles/` directory; the test suite completed successfully.
+The recorded Assignment 2 results were 14 passing tests, `No changes detected`, and no whitespace errors. That local test run also printed a warning about the missing collected `staticfiles/` directory; the test suite completed successfully. The full Tutorial 3 test suite completed successfully: 28 tests passed. This update adds no model fields or migrations.
 
 Tests run against a separate test database. Example names used in test cases are test data. These checks exercise model behavior and rendered HTTP responses; they do not measure browser layout or verify the truth of portfolio claims.
 
@@ -184,6 +201,8 @@ For a manual browser check:
 - Check desktop and narrow mobile widths, including approximately 390 pixels, for readable content and horizontal overflow.
 - Use the keyboard to follow navigation and the skip link.
 - Confirm that the three projects and the B. Braun responsibilities match the intended content.
+- Add a temporary project, search for its title, inspect the filtered JSON/XML, cancel deletion once, and then delete only that temporary record.
+- Check that invalid form input shows errors and retains the entered values. Refresh after a successful submission and confirm that it does not create another record.
 
 ## Weekly Progress
 
@@ -194,10 +213,11 @@ For a manual browser check:
 | Assignment 1 | Added static projects, experience, education, and skills; implemented responsive styling and native interactive details. |
 | Tutorial 2 | Introduced the `main` app, the `Experience` model, ORM-backed views, named URLs, migrations, and six tests. |
 | Assignment 2 | Added the `Project` model and migration, project list and detail pages, shared templates, fixtures, and additional tests. Restored the B. Braun content as database records and extended experience fields. |
+| Tutorial 3 | Added a Project ModelForm, title search, JSON/XML endpoints, the tutorial's JSON-to-template flow, POST-only deletion with confirmation, success messages, and 14 additional tests. |
 
 ## Reflective Questions
 
-The Assignment 1 answers below describe the static version submitted for that assignment. Later work introduced the database-backed features discussed under Assignment 2.
+The Assignment 1 and Assignment 2 answers below describe their respective submitted versions. Tutorial 3 subsequently changed the project-list data flow as explained below; it does not change those historical submissions.
 
 ### Assignment 1
 
@@ -254,41 +274,31 @@ The Assignment 1 answers below describe the static version submitted for that as
 
    The migration files belong in Git alongside the model changes. A fresh checkout can apply them with `migrate`. Portfolio records are imported separately through `loaddata`.
 
+## Tutorial 3: Forms and Data Delivery
+
+The implementation adapts [Tutorial 3](https://pbp.cs.ui.ac.id/en/tutorial/tutorial-3.html) to the existing portfolio. `ProjectForm` uses `organization`, `summary`, `contribution`, `technologies`, and the other existing fields. It does not introduce the tutorial example's differently named fields. `base.html` already supplies the document structure and the single `<main>` element; child templates fill its `content` block and use the existing `title` block.
+
+On GET, `create_project` displays an unbound form. On POST, it binds the submitted data, validates it, saves one new record if valid, and redirects to the project list. Invalid input renders the same bound form with errors and the submitted values. An explicit method check binds even an empty POST so required-field errors are shown. [Django ModelForm documentation](https://docs.djangoproject.com/en/6.1/topics/forms/modelforms/)
+
+`get_projects_json` serializes the title-filtered QuerySet into Django's JSON format. Each record contains `model`, `pk`, and `fields`. `show_projects` calls that function directly and deserializes its response into Project instances for `projects.html`. There is no HTTP request from the server to itself and no browser-side JavaScript fetch. This deliberately redundant round trip follows the tutorial's data-delivery exercise; the model's properties and featured ordering still work. The optional XML endpoint exposes the same records in a second representation. [Django serialization documentation](https://docs.djangoproject.com/en/6.1/topics/serialization/)
+
+The search parameter is `title`, for example `/api/projects/?title=macan`. It searches project titles rather than organization names. A whitespace-only query returns all records; an unmatched query produces an empty result without deleting anything.
+
+Deletion opens a native HTML popover. Cancel, Escape, or clicking outside dismisses it. The confirmation form sends a POST with a CSRF token. A GET to the deletion URL returns 405 and does not delete data; a POST for a missing UUID returns 404. The popover is not declared an ARIA modal, because native popovers do not make the rest of the page inert. [MDN popover reference](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/popover)
+
+The existing PWS HTTPS origin is listed in `CSRF_TRUSTED_ORIGINS`; the CSRF middleware stays enabled. Forms use the existing English labels and warm portfolio colors. The two optional URL/image fields from the tutorial example are not part of this model, so no unused image or external-link inputs are added.
+
 ## AI Usage Disclosure
 
-I used **ChatGPT** during Assignments 1 and 2. Assistance included explanations, substantial HTML/CSS and Python code suggestions, complete replacement templates, fixture content, tests, debugging, Git commands, and README drafting.
+I used **ChatGPT** . Assistance included explanations, substantial HTML/CSS and Python code suggestions fixture content, tests, debugging, Git commands, and README drafting.
+
+
 
 
 
 The code and documentation were developed with AI assistance. Thus for example the development of this specific README could easily facilitated. My contribution included selecting and checking the personal content, applying changes, running migrations and tests, inspecting the site, and reporting problems that required another iteration.
 
-### Prompt Strategy and Assistance Log
-
-I asked for changes in stages, using the existing portfolio as context. When an editing instruction was unclear, I requested the complete affected file. I then shared errors or test results before proceeding. The entries below summarize those requests; they are a paraphrased development log.
-
-| Stage | Assistance requested | My action or observed result |
-| --- | --- | --- |
-| Assignment 1: layout | Suggest semantic HTML and responsive CSS for my portfolio. | Applied the code and inspected the profile, project cards, navigation, and expandable descriptions. |
-| Assignment 1: mobile layout | Explain how to check the page in a mobile viewport. | Used Brave's iPhone 12 Pro emulation and checked wrapping and content order. |
-| Assignment 1: CSS debugging | Explain why the design still looked unchanged. | Used a hard refresh; the updated stylesheet then appeared. |
-| Tutorial 2: routing | Help resolve `NoReverseMatch` after changing the navigation. | Corrected links to registered routes and home-page anchors. |
-| Tutorial 2: database content | Explain why both the tutorial example and my entry appeared. | Learned that another `create()` call adds a record, and removed the unwanted example through a filtered query. |
-| Assignment 2: MVT | Extend the portfolio with database-backed projects and additional useful functionality. | Applied the model, migration, views, named routes, list page, and detail page. |
-| Assignment 2: template inheritance | Provide the full `index.html` because the extraction into `base.html` was unclear. | Replaced the template and obtained a passing nine-test run at that stage. |
-| Assignment 2: data and tests | Make the three projects reproducible and test the detail pages. | Loaded fixtures and added tests for selected records, missing IDs, links, and repeated imports. |
-| Assignment 2: experience | Restore the B. Braun content from Assignment 1 on the database-backed page. | Applied the experience migration, loaded its fixture, removed the temporary tutorial entry, and obtained 14 passing tests. |
-| Assignment 2: documentation | Explain the implementation and prepare setup instructions, reflections, and AI disclosure. | Supplied the actual terminal output and screenshot as evidence for the documentation draft. |
-
-### Critical Reflection on AI Assistance
-
-AI assistance made it easier to develop a consistent structure, but it did not remove the need to understand how the pieces fit together. The template-inheritance step was a concrete example: the initial editing instructions were unclear to me, so I asked for the complete file. The relevant distinction is that `base.html` provides the shared document structure and child templates fill its content block.
-
-The database work exposed another limitation of copying instructions without understanding their effect. Repeating `Experience.objects.create()` produced another entry. For Assignment 2, fixed-ID fixtures and a repeated-import test gave me a more controlled way to load portfolio data.
-
-I also had to distinguish the date a record is created from the date employment began. The tutorial's automatic timestamp was unsuitable for entering a historical start date through normal object creation. The revised model accepts an explicit date, and a test checks that it is retained and displayed.
-
-Passing tests provide evidence for the behaviors they cover. They cannot establish whether a personal claim is accurate, whether the page looks good in every browser, or what grade the work will receive. I supplied and checked the personal information, used browser observations alongside the automated results, and treated AI grading estimates as suggestions rather than guarantees.
 
 ### Further Development
 
-Useful next steps would be an editing interface for portfolio content, topic filters for projects, and database models for education and skills. Reproducible dependency versions would also make environment setup more predictable. These are possible future improvements rather than features claimed in the current implementation.
+Useful next steps would be authentication and authorization for changes, editing existing projects, topic filters, and database models for education and skills. Reproducible dependency versions would also make environment setup more predictable. These are possible future improvements rather than features claimed in the current implementation.

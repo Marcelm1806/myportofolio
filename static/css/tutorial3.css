@@ -1,0 +1,230 @@
+/* Tutorial 3 additions use the existing portfolio design tokens. */
+
+.button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--ink);
+    border-radius: var(--radius-small);
+    color: var(--paper);
+    background: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.button:hover {
+    color: var(--ink);
+    background: var(--accent-light);
+}
+
+.button-secondary {
+    color: var(--ink);
+    background: var(--paper);
+}
+
+.button-danger {
+    color: #fff;
+    background: #9f312b;
+    border-color: #9f312b;
+}
+
+.button-danger:hover {
+    color: #fff;
+    background: #7e2520;
+    border-color: #7e2520;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.project-toolbar {
+    margin-bottom: 1.5rem;
+}
+
+.project-search {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.project-search-field {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+
+.form-group label,
+.project-search label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+}
+
+.project-search input,
+.form-group input:not([type="checkbox"]),
+.form-group textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 0.75rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+    font: inherit;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 6rem;
+}
+
+.project-form {
+    max-width: 760px;
+    padding: clamp(1rem, 3vw, 2rem);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-large);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-help {
+    margin-top: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.form-checkbox input {
+    flex-shrink: 0;
+    width: 1.2rem;
+    height: 1.2rem;
+    accent-color: var(--accent-dark);
+}
+
+.form-checkbox label {
+    margin-bottom: 0;
+}
+
+.form-error,
+.form-errors,
+.form-error-summary {
+    color: #9f312b;
+}
+
+.form-errors {
+    margin-top: 0.4rem;
+    list-style: none;
+    font-size: 0.9rem;
+}
+
+.form-error-summary {
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.form-group.form-group-invalid input:not([type="checkbox"]),
+.form-group.form-group-invalid textarea {
+    border-color: #9f312b;
+}
+
+.form-actions,
+.project-card-actions,
+.project-delete-modal-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.project-card-actions {
+    justify-content: space-between;
+    margin-top: 1.5rem;
+}
+
+.project-card-actions .project-link {
+    margin-top: 0;
+}
+
+.project-grid > .empty-state {
+    grid-column: 1 / -1;
+}
+
+.feedback-messages {
+    padding-top: 1.5rem;
+}
+
+.feedback-message {
+    padding: 1rem;
+    color: var(--ink);
+    background: var(--accent-light);
+    border-left: 4px solid var(--accent-dark);
+    border-radius: var(--radius-small);
+}
+
+.feedback-message + .feedback-message {
+    margin-top: 0.5rem;
+}
+
+.project-delete-modal {
+    position: fixed;
+    inset: 0;
+    width: min(32rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 1.5rem;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-large);
+    box-shadow: var(--shadow);
+}
+
+.project-delete-modal::backdrop {
+    background: rgb(28 25 23 / 45%);
+}
+
+.project-card .project-delete-modal h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
+.project-delete-modal-actions {
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 520px) {
+    .project-search {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .project-search-field {
+        flex-basis: auto;
+    }
+
+    .form-actions .button {
+        flex: 1 1 auto;
+    }
+}

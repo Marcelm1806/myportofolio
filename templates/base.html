@@ -20,6 +20,7 @@
     >
 
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tutorial3.css' %}">
 </head>
 
 <body>
@@ -42,6 +43,13 @@
     </header>
 
     <main id="main-content" tabindex="-1">
+        {% if messages %}
+            <div class="container feedback-messages" aria-live="polite">
+                {% for message in messages %}
+                    <p class="feedback-message" role="status">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 

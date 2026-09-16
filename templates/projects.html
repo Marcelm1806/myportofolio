@@ -18,6 +18,27 @@
             </p>
         </header>
 
+        <div class="project-toolbar">
+            <a href="{% url 'main:create_project' %}" class="button">+ Add project</a>
+        </div>
+
+        <form method="get" action="{% url 'main:show_projects' %}" class="project-search" role="search">
+            <div class="project-search-field">
+                <label for="project-title-search">Search by project title</label>
+                <input
+                    type="search"
+                    id="project-title-search"
+                    name="title"
+                    value="{{ title_query }}"
+                    placeholder="Enter part of a project title"
+                >
+            </div>
+            <button type="submit" class="button">Search</button>
+            {% if title_query %}
+                <a href="{% url 'main:show_projects' %}" class="button button-secondary">Clear</a>
+            {% endif %}
+        </form>
+
         <div class="project-grid">
             {% for project in project_list %}
                 <article class="project-card{% if project.is_featured %} project-card-featured{% endif %}">
@@ -60,17 +81,24 @@
                         <summary>My contribution</summary>
                         <p>{{ project.contribution|linebreaksbr }}</p>
                     </details>
-                    <a
-                    href="{% url 'main:show_project_detail' project.id %}"
-                    class="project-link"
-                    aria-label="View project: {{ project.title }}"
-                    >
-                    View project &rarr;
-                </a>
+                    <div class="project-card-actions">
+                        <a
+                            href="{% url 'main:show_project_detail' project.id %}"
+                            class="project-link"
+                            aria-label="View project: {{ project.title }}"
+                        >
+                            View project &rarr;
+                        </a>
+                        {% include "components/project_delete_modal.html" with project=project %}
+                    </div>
                 </article>
             {% empty %}
                 <p class="empty-state">
-                    No projects have been added yet.
+                    {% if title_query %}
+                        No projects match your search.
+                    {% else %}
+                        No projects have been added yet.
+                    {% endif %}
                 </p>
             {% endfor %}
         </div>

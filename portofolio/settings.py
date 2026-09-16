@@ -41,6 +41,11 @@ ALLOWED_HOSTS = [
 
 # Application definition
 
+# The public HTTPS origin used when forms are submitted on PWS.
+CSRF_TRUSTED_ORIGINS = [
+    "https://marcel-mikula-myportofolio.pws.cs.ui.ac.id",
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
