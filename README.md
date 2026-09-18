@@ -2,9 +2,9 @@
 
 A responsive personal portfolio developed for Platform-Based Programming at the Faculty of Computer Science, Universitas Indonesia.
 
-The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation.
+The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation. Assignment 3 adds database-backed education with create/update forms, deletion, filtering, and JSON delivery, and also exposes experience as JSON.
 
-[Assignment 1 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-1.html) · [Assignment 2 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-2.html)
+[Assignment 1 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-1.html) · [Assignment 2 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-2.html) · [Assignment 3 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-3.html)
 
 ## Student Information
 
@@ -14,7 +14,8 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 
 ## Current Features
 
-- Profile, education, and Data & AI topics on the home page
+- Profile, a database-backed education overview, and Data & AI topics on the home page
+- Dedicated Education page with create/edit forms, deletion confirmation, text search, status filtering, and result counts
 - Database-backed project overview featuring Porsche, ING, and my bachelor's thesis
 - Individual project pages with a return link to the overview
 - Database-backed B. Braun experience with responsibilities, role progression, and employment period
@@ -23,11 +24,13 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 - Native expandable project contributions using `<details>` and `<summary>`
 - Empty states for the project and experience lists
 - A 404 response for a project ID that does not exist
-- Versioned fixtures for loading three projects and one experience entry
+- Versioned fixtures for loading three projects, one experience entry, and three education entries
 - A model-based project form with validation, CSRF protection, and success messages
 - Project title search and JSON/XML endpoints with the same filter
 - A native popover for confirming deletion through a CSRF-protected POST
-- Twenty-eight automated tests covering the existing portfolio and the new form/data-delivery behavior
+- Education validation for study periods, required fields, website URLs, and display order
+- JSON endpoints for projects, education, and experience; their list pages deserialize the JSON before rendering
+- Fifty automated test cases covering the portfolio, forms, validation, CSRF, and data delivery (execution status below)
 
 The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, Flexbox, CSS variables, and `clamp()`; no frontend framework or JavaScript library is required.
 
@@ -44,10 +47,16 @@ The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, F
 | Delete project | `/projects/<uuid>/delete/` | POST only; linked through the confirmation popover |
 | Project detail | `/projects/<uuid>/` | One selected project |
 | Experience | `/experience/` | Professional experience from the database |
-| Education | `/#education` | Education section on the home page |
+| Education | `/education/` | Education records; supports `?q=...&status=current` or `completed` |
+| Education overview | `/#education` | Unfiltered overview of the same database records on the home page |
+| Add education | `/education/add/` | GET displays the form; valid POST creates an entry |
+| Edit education | `/education/<uuid>/edit/` | GET prefills the form; valid POST updates that record |
+| Delete education | `/education/<uuid>/delete/` | POST only, after confirmation |
+| Education as JSON | `/api/education/` | The same text and status filters as the education page |
+| Experience as JSON | `/api/experience/` | Experience records, including UUIDs and historical dates |
 | Skills | `/#skills` | Data & AI section on the home page |
 
-The navigation uses named Django URLs. Education and Skills link to home-page sections, including when accessed from another page.
+The navigation uses named Django URLs. Education now opens its own page. Profile and Skills link to home-page sections; existing `/#education` links continue to work. Changes to an education record appear both on the dedicated page and in the home overview.
 
 ## Technologies and Development Environment
 
@@ -59,35 +68,43 @@ The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and 
 | --- | --- |
 | `portofolio/settings.py` | Project configuration, database selection, templates, and static files |
 | `portofolio/urls.py` | Project-level routing, including the `main` application's URLs |
-| `main/models.py` | The `Experience` and `Project` models |
-| `main/forms.py` | `ProjectForm`, using the existing Project fields |
-| `main/views.py` | Profile context and views for the home, experience, project list, and project detail pages |
+| `main/models.py` | `Experience`, `Project`, and `Education`, including education period validation |
+| `main/forms.py` | `ProjectForm` and `EducationForm`, with explicit editable-field lists |
+| `main/views.py` | Page views, form submission handlers, filtering, and JSON/XML responses |
 | `main/urls.py` | Named routes in the `main` namespace |
 | `main/tests.py` | Automated model, page, and fixture tests |
 | `main/tests_tutorial3.py` | Creation, deletion, CSRF, filtering, JSON, and XML tests |
+| `main/tests_assignment3.py` | Education CRUD, validation, serialization, shared layouts, and fixture tests |
 | `main/migrations/` | Versioned database schema changes |
 | `main/fixtures/main/projects.json` | Three portfolio project records |
 | `main/fixtures/main/experience.json` | The B. Braun experience record |
+| `main/fixtures/main/education.json` | Universitas Indonesia, TU Darmstadt, and Mannheim education entries |
 | `templates/base.html` | Shared document structure, navigation, footer, and content block |
 | `templates/index.html` | Profile, education, and Data & AI content |
 | `templates/projects.html` | Project list and empty state |
 | `templates/projects_form.html` | Project creation form, help text, and validation errors |
-| `templates/components/project_delete_modal.html` | Reusable deletion confirmation popover |
+| `templates/components/project_delete_modal.html` | Project-specific arguments for the shared confirmation component |
+| `templates/components/delete_confirmation.html` | Confirmation UI shared by projects and education |
+| `templates/components/form_fields.html` | Shared labels, widgets, help text, and field errors |
+| `templates/components/education_card.html` | Education card shared by the home overview and education page |
+| `templates/education.html` | Education list, filters, actions, and empty states |
+| `templates/education_form.html` | Shared create/update education form page |
 | `templates/project_detail.html` | Individual project content |
 | `templates/experience.html` | Experience list and empty state |
 | `static/css/style.css` | Shared styling and responsive rules |
 | `static/css/tutorial3.css` | Form, search, message, and confirmation styles using the existing design tokens |
+| `static/css/assignment3.css` | Education cards, action layout, and status-filter styling |
 | `static/img/Download.jpeg` | Profile photograph |
 | `manage.py` | Django management commands |
 
 ## Local Setup
 
-These instructions are for a fresh checkout of the Tutorial 3 branch. Install Python 3.13 and Git first.
+These instructions are for a fresh checkout of the Assignment 3 branch. Install Python 3.13 and Git first.
 
 1. Clone the branch and enter the repository:
 
    ```bash
-   git clone --branch feature/tutorial_3_forms https://github.com/Marcelm1806/myportofolio.git
+   git clone --branch feature/assignment_3_education https://github.com/Marcelm1806/myportofolio.git
    cd myportofolio
    ```
 
@@ -123,9 +140,10 @@ These instructions are for a fresh checkout of the Tutorial 3 branch. Install Py
    python manage.py migrate
    python manage.py loaddata main/projects.json
    python manage.py loaddata main/experience.json
+   python manage.py loaddata main/education.json
    ```
 
-   On an empty database, the fixture commands install three projects and one experience record. Without loading them, the corresponding pages display their empty states.
+   On an empty database, the fixture commands install three projects, one experience record, and three education entries. For an existing Tutorial 3 database, run `migrate` and load only `main/education.json` once to preserve project and experience edits. Without loading them, the corresponding pages display their empty states.
 
 5. Check the configuration and run the tests:
 
@@ -154,6 +172,10 @@ The model's default ordering places featured projects first, then uses `display_
 
 Employment dates in the B. Braun fixture are known to month precision. Their day component is normalized to 1, and the page displays only month and year. `started_at` uses `default=timezone.now`, allowing an explicit historical start date to be supplied when creating a record. [Django field reference](https://docs.djangoproject.com/en/6.1/ref/models/fields/#django.db.models.DateField.auto_now_add)
 
+`Education` uses text fields for the institution, degree, and optional description; integer fields for the study years and display order; a boolean for ongoing study; and an optional URL. Django generates its UUID and creation/update timestamps. Year precision preserves the known portfolio history without inventing exact dates. The initial UI exchange and TU Darmstadt degree are marked as ongoing; Mannheim is recorded as 2020–2025. The fixed timestamps in the education fixture describe the seed records, not study dates.
+
+The model's `clean()` method rejects an end year before the start year, an end year on a current entry, or a completed entry without an end year. Year validators accept 1900–2100. `EducationForm` runs these checks for both creation and editing. Direct ORM `save()` calls do not automatically call `full_clean()`, so scripts that bypass the form must validate explicitly.
+
 ### Loading and Updating Data
 
 The JSON fixtures are a reproducible source for the initial portfolio records. Views retrieve the imported records through the ORM; templates render those database values.
@@ -164,13 +186,13 @@ To update the versioned portfolio content, edit the relevant fixture and reload 
 
 ### Current Scope
 
-Projects and experience are rendered from database records. Profile values are supplied by the view, while education and skills remain in the home template. Projects can be created and deleted through the browser, searched by title, and inspected as JSON or XML. Updating an existing project through a form is a possible future extension; fixtures and the Django shell remain available for content maintenance.
+Projects, experience, and education are rendered from database records. Profile values come from the view; skills remain static. Education can be created, updated, deleted, and filtered in the browser. Projects retain their Tutorial 3 creation, deletion, title search, JSON/XML, and detail features. Project editing and experience editing remain outside this assignment's scope.
 
-Authentication and ownership checks are not implemented at this tutorial stage. Anyone who can reach the application can use its create/delete forms. CSRF checks protect against cross-site request forgery; they do not decide who is allowed to manage a portfolio. Public deployment with editing enabled needs an authorization design in a later iteration.
+Authentication and ownership checks are not implemented at this tutorial stage. Anyone who can reach the application can use its create/update/delete forms. CSRF checks protect against cross-site request forgery; they do not decide who is allowed to manage a portfolio. Public deployment with editing enabled needs an authorization design in a later iteration.
 
 ## Testing and Verification
 
-The Assignment 2 baseline completed **14 tests successfully** on my Mac. Tutorial 3 adds **14 tests**, giving **28 tests** in the current code. The new suite must be run locally before submission; the previous 14-test result does not verify the new implementation.
+The previously recorded Tutorial 3 result is **28 passing tests** on my Mac. Assignment 3 adds **22 test cases**, bringing the suite to **50**. I completed the local configuration and migration checks, the test suite, and the manual browser checks successfully on my Mac. The patch preparation environment checked Python syntax and patch application but could not install Django; runtime verification was performed locally.
 
 | Test group | Count | Coverage |
 | --- | --- | --- |
@@ -181,6 +203,9 @@ The Assignment 2 baseline completed **14 tests successfully** on my Mac. Tutoria
 | Experience history test | 1 | Saving and displaying historical dates, organization, timeline, and responsibilities |
 | Tutorial 3 write tests | 9 | Creation, invalid input, redirect behavior, preservation of other records, CSRF, deletion, missing IDs, and HTTP methods |
 | Tutorial 3 data-delivery tests | 5 | JSON structure and ordering, shared title filtering, distinct empty states, XML content, and read-only endpoints |
+| Education write tests | 11 | Create/update/delete, preservation of other records, invalid input, generated-field protection, missing IDs, methods, and CSRF |
+| Education data tests | 9 | Typed JSON, actual JSON-to-template flow, filters, empty states, home synchronization, escaping, shared layouts, and experience JSON |
+| Education fixture and period tests | 2 | Repeatable fixture loading, model validation, preservation of independent entries, and year labels |
 
 Run the full suite and development checks with:
 
@@ -190,19 +215,22 @@ python manage.py makemigrations --check --dry-run
 git diff --check
 ```
 
-The recorded Assignment 2 results were 14 passing tests, `No changes detected`, and no whitespace errors. That local test run also printed a warning about the missing collected `staticfiles/` directory; the test suite completed successfully. The full Tutorial 3 test suite completed successfully: 28 tests passed. This update adds no model fields or migrations.
+The recorded Assignment 2 results were 14 passing tests, `No changes detected`, and no whitespace errors. That local test run also printed a warning about the missing collected `staticfiles/` directory; the test suite completed successfully. The full Tutorial 3 test suite subsequently completed successfully: 28 tests passed. Assignment 3 adds `0004_education.py`; it must be applied before starting the updated site.
 
 Tests run against a separate test database. Example names used in test cases are test data. These checks exercise model behavior and rendered HTTP responses; they do not measure browser layout or verify the truth of portfolio claims.
 
 For a manual browser check:
 
-- Open the home, Projects, and Experience pages and follow each project detail link.
+- Open Home, Projects, Experience, and Education, and follow each project detail link.
 - Expand and collapse the contribution sections, and follow the return link from a detail page.
 - Check desktop and narrow mobile widths, including approximately 390 pixels, for readable content and horizontal overflow.
 - Use the keyboard to follow navigation and the skip link.
 - Confirm that the three projects and the B. Braun responsibilities match the intended content.
 - Add a temporary project, search for its title, inspect the filtered JSON/XML, cancel deletion once, and then delete only that temporary record.
 - Check that invalid form input shows errors and retains the entered values. Refresh after a successful submission and confirm that it does not create another record.
+- Create a temporary education entry, edit it, and confirm the changes on both Education and Home. Check current/completed status filters and `/api/education/?q=...`.
+- Try an end year earlier than the start year, then cancel deletion once and finally delete the temporary entry. Confirm the three real entries remain.
+- Inspect `/api/experience/` and confirm that the experience page still displays B. Braun correctly.
 
 ## Weekly Progress
 
@@ -214,10 +242,11 @@ For a manual browser check:
 | Tutorial 2 | Introduced the `main` app, the `Experience` model, ORM-backed views, named URLs, migrations, and six tests. |
 | Assignment 2 | Added the `Project` model and migration, project list and detail pages, shared templates, fixtures, and additional tests. Restored the B. Braun content as database records and extended experience fields. |
 | Tutorial 3 | Added a Project ModelForm, title search, JSON/XML endpoints, the tutorial's JSON-to-template flow, POST-only deletion with confirmation, success messages, and 14 additional tests. |
+| Assignment 3 | Added Education with all CRUD actions, JSON delivery, text/status filtering, a synchronized home overview, shared form/card/confirmation components, experience JSON, a schema migration, fixture, and 22 additional tests. Local configuration, migration, test-suite, and browser checks completed successfully. |
 
 ## Reflective Questions
 
-The Assignment 1 and Assignment 2 answers below describe their respective submitted versions. Tutorial 3 subsequently changed the project-list data flow as explained below; it does not change those historical submissions.
+The Assignment 1 and Assignment 2 answers below describe their respective submitted versions. Tutorial 3 subsequently changed the project-list data flow, and Assignment 3 moved education into a model, as explained below; it does not change those historical submissions.
 
 ### Assignment 1
 
@@ -288,17 +317,66 @@ Deletion opens a native HTML popover. Cancel, Escape, or clicking outside dismis
 
 The existing PWS HTTPS origin is listed in `CSRF_TRUSTED_ORIGINS`; the CSRF middleware stays enabled. Forms use the existing English labels and warm portfolio colors. The two optional URL/image fields from the tutorial example are not part of this model, so no unused image or external-link inputs are added.
 
+## Assignment 3: Education Forms and JSON Delivery
+
+The additional portfolio section is **Education**. Its model has eight editable fields with several types (`CharField`, `TextField`, `PositiveIntegerField`, `BooleanField`, and `URLField`), plus a generated UUID and timestamps. `EducationForm.Meta.fields` lists every editable field and excludes `id`, `created_at`, and `updated_at`. This resolves the assignment wording about ID/timestamp fields: they exist on the model but are not user inputs.
+
+| Requirement | Implementation |
+| --- | --- |
+| Shared root template | Every full page extends `base.html`; components are included fragments, not separate documents |
+| Create and update forms | `EducationForm`, `create_education`, and `update_education`, sharing one form template |
+| Delete action | `delete_education`, POST only, with CSRF and a confirmation popover |
+| JSON retrieval | `get_education_json` at `/api/education/` |
+| Deserialize before display | `show_education` calls the JSON view and passes deserialized Education instances to the template |
+| Consistent page content | The home overview also reads Education data through JSON serialization/deserialization |
+| Additional existing data as JSON | `/api/experience/`; the experience page also deserializes its JSON response |
+
+The education page and API share text and status filters. Search matches institution or degree, ignoring case and surrounding whitespace. Status accepts `current` or `completed`; an unknown value is treated as no status filter. The default ordering uses `display_order`, newest start year, institution, and UUID as a stable tie-breaker. GET requests never save records.
+
+Create and update share `_education_form_response()`. For updating, the view looks up the UUID with `get_object_or_404()` and supplies `instance=entry` to the form. `form.save()` therefore updates that row rather than inserting a duplicate. Invalid submissions retain their input and show field errors. A successful POST redirects to the list and shows a success message, so refreshing the resulting page does not repeat the submission.
+
+Additional usability features include combined search/status filtering, result counts, separate empty/no-match states, adjustable display order, visible validation feedback, keyboard-accessible confirmation controls, and immediate consistency between the two education views. The site continues to use the existing responsive design and native HTML controls without a frontend framework.
+
+### Assignment 3
+
+1. **Why use ModelForm rather than hand-written forms, and why include a CSRF token?**
+
+   `ModelForm` connects the form to a model so field types, required values, length limits, and validators do not need to be recreated independently in HTML and Python. My `EducationForm` adds readable labels, help text, and widgets while obtaining its validation and persistence behavior from `Education`. The shared form-fields template still controls the HTML layout; using ModelForm does not mean giving up custom styling.
+
+   On submission, `is_valid()` checks field values and the model's study-period rules before `save()` is called. For editing, `instance=entry` preserves the selected record's identity. Explicitly listing editable fields also prevents submitted UUID or timestamp values from becoming writable through this form.
+
+   Each POST form includes `{% csrf_token %}`. Django's CSRF middleware checks the submitted token and applicable origin information to reduce the risk of another website causing a visitor's browser to submit an unwanted action. This applies to creation, editing, and deletion. A missing or invalid token is rejected. CSRF protection is distinct from authentication and permission checks; the current coursework app does not yet restrict editing to an authenticated owner.
+
+2. **Why is JSON often preferred to XML in modern web applications?**
+
+   JSON represents common application values directly as objects, arrays, strings, numbers, booleans, and null. This matches the structure of my education records: a year is a number, `is_current` is a boolean, and an absent end year is null. Browsers and many programming languages provide JSON parsers, making it convenient for APIs and browser clients.
+
+   Compared with equivalent XML containing repeated opening and closing tags, JSON often needs less markup. It is not always smaller or faster, and it is not limited to JavaScript. XML remains useful where document structure, namespaces, schema tooling, or an existing XML-based integration matters. The project still exposes the Tutorial 3 XML endpoint; Education uses JSON to follow the assignment's workflow.
+
+3. **How does a view return portfolio data as JSON, and why serialize models?**
+
+   A GET request to `/api/education/` is resolved by the project and application URL configurations to `get_education_json`. `_filtered_education()` constructs an ordered QuerySet using the query parameters. Django's serializer evaluates those records and converts them to JSON containing each object's model label, primary key, and fields. The view returns this text in an `HttpResponse` with `Content-Type: application/json`.
+
+   A Python QuerySet or model instance cannot be transferred directly as a JSON response. Serialization turns framework objects and values such as UUIDs and timestamps into a transport representation that another client can parse. It exposes the serialized model fields; computed properties such as `period_label` are not separate stored fields in this response.
+
+   For `/education/`, `show_education` calls the JSON view directly as a Python function and deserializes its response. `_objects_from_json()` takes the reconstructed objects and passes them to `education.html`, where properties such as `period_label` work again. The helper never saves those objects. There is no server-to-itself HTTP request and no browser-side fetch. This round trip intentionally demonstrates the week's serialization exercise; an ordinary server-rendered view could otherwise pass a QuerySet directly to its template.
+
 ## AI Usage Disclosure
 
-I used **ChatGPT** . Assistance included explanations, substantial HTML/CSS and Python code suggestions fixture content, tests, debugging, Git commands, and README drafting.
+I used **ChatGPT** for explanations, implementation suggestions, substantial Python/HTML/CSS code, fixtures, tests, debugging, Git instructions, and README drafting.
+| Stage | Assistance requested | Review or limitation |
+| --- | --- | --- |
+| Earlier assignments | Help with the responsive portfolio, models, and template structure | I supplied the real portfolio content, tested locally, and reported layout and data issues. |
+| Earlier debugging | Help with stale CSS and example tutorial data | A hard refresh resolved the browser cache issue; the copied example experience was replaced with my own content. |
+| Tutorial 3 | Adapt project forms and JSON/XML delivery to the existing Project model | The implementation reused my actual model fields; the previous README records 28 passing local tests. |
+| Assignment 3 planning | Implement the official assignment in one compatible patch | Education was chosen as an additional section, with year-based fields to avoid inventing exact study dates. |
+| Assignment 3 code | Create/update/delete forms, JSON delivery, shared templates, and validation | The patch was based on the exact GitHub commit `ce1d5855ee719b5682ef8202455835003237b360`; static checks and patch-application checks were used during preparation. |
+| Assignment 3 verification | Add tests for the new behavior and document the data flow | 22 tests were added. Django could not be installed in the patch preparation environment. I subsequently ran the test suite and browser checks successfully on my Mac and reported the result. |
 
+AI assistance can produce code that looks plausible without proving that it runs. Static syntax checks cannot establish database migration compatibility, successful requests, or mobile usability. I therefore checked locally rather than treating its static checks as a runtime result. Understanding the update, CSRF, and JSON flow remains my responsibility when explaining the implementation.
 
-
-
-
-The code and documentation were developed with AI assistance. Thus for example the development of this specific README could easily facilitated. My contribution included selecting and checking the personal content, applying changes, running migrations and tests, inspecting the site, and reporting problems that required another iteration.
-
+The documentation distinguishes AI preparation from my local verification. The final verification status was updated after I reported that the local checks worked. Earlier manual debugging, such as resolving stale CSS and removing example records, illustrates why generated suggestions require practical review.
 
 ### Further Development
 
-Useful next steps would be authentication and authorization for changes, editing existing projects, topic filters, and database models for education and skills. Reproducible dependency versions would also make environment setup more predictable. These are possible future improvements rather than features claimed in the current implementation.
+Possible next steps include authentication and authorization for changes, project editing, and reproducible dependency versions. Skills remain static. These are future improvements, not features claimed in the current assignment.
