@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_update %}Edit{% else %}Add{% endif %} education | {{ name }}{% endblock %}
+
+{% block content %}
+<section class="content-section" aria-labelledby="education-form-title">
+    <div class="container">
+        <header class="section-heading">
+            <p class="section-kicker">Academic background</p>
+            <h1 id="education-form-title">{% if is_update %}Edit education{% else %}Add education{% endif %}</h1>
+            <p>Required fields are marked *. Use years for your study period.</p>
+        </header>
+        {% if is_update %}
+            {% url 'main:update_education' education.id as form_action %}
+        {% else %}
+            {% url 'main:create_education' as form_action %}
+        {% endif %}
+        <form method="post" action="{{ form_action }}" class="project-form">
+            {% csrf_token %}
+            {% include "components/form_fields.html" %}
+            <div class="form-actions">
+                <button type="submit" class="button">{% if is_update %}Save changes{% else %}Save education{% endif %}</button>
+                <a href="{% url 'main:show_education' %}" class="button button-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,29 @@
+<article class="education-card">
+    <p class="education-year">{{ education.period_label }}</p>
+    {% if show_actions %}
+        <h2>{{ education.institution }}</h2>
+    {% else %}
+        <h3>{{ education.institution }}</h3>
+    {% endif %}
+    <p class="education-degree">{{ education.degree }}</p>
+    {% if education.description %}
+        <p class="education-description">{{ education.description|linebreaksbr }}</p>
+    {% endif %}
+    <p class="education-status">
+        {% if education.is_current %}Currently studying{% else %}Completed{% endif %}
+    </p>
+    {% if education.website %}
+        <a href="{{ education.website }}" class="project-link" target="_blank" rel="noopener noreferrer">
+            Institution website <span class="visually-hidden">for {{ education.institution }} (opens in a new tab)</span>
+        </a>
+    {% endif %}
+    {% if show_actions %}
+        <div class="education-card-actions">
+            <a href="{% url 'main:update_education' education.id %}" class="button button-secondary" aria-label="Edit education: {{ education.institution }}">
+                Edit
+            </a>
+            {% url 'main:delete_education' education.id as delete_url %}
+            {% include "components/delete_confirmation.html" with item_id=education.id item_label=education.institution item_kind="education" delete_url=delete_url %}
+        </div>
+    {% endif %}
+</article>

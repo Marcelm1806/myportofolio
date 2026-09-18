@@ -1,0 +1,50 @@
+[
+  {
+    "model": "main.education",
+    "pk": "c6b09b26-ef4b-41b8-b2b5-034dbd32ea7e",
+    "fields": {
+      "institution": "Universitas Indonesia",
+      "degree": "Exchange Semester",
+      "description": "Faculty of Computer Science and Faculty of Economics and Business",
+      "start_year": 2026,
+      "end_year": null,
+      "is_current": true,
+      "website": "",
+      "display_order": 0,
+      "created_at": "2026-09-18T00:00:00Z",
+      "updated_at": "2026-09-18T00:00:00Z"
+    }
+  },
+  {
+    "model": "main.education",
+    "pk": "e6e14742-d538-4520-bb6f-bfc49e39b6e9",
+    "fields": {
+      "institution": "Technical University of Darmstadt",
+      "degree": "M.Sc. Business Information Systems",
+      "description": "",
+      "start_year": 2024,
+      "end_year": null,
+      "is_current": true,
+      "website": "",
+      "display_order": 1,
+      "created_at": "2026-09-18T00:00:00Z",
+      "updated_at": "2026-09-18T00:00:00Z"
+    }
+  },
+  {
+    "model": "main.education",
+    "pk": "99e6d51b-d191-482e-aeba-601cc9f7b1a5",
+    "fields": {
+      "institution": "University of Mannheim",
+      "degree": "B.Sc. Business Information Systems",
+      "description": "",
+      "start_year": 2020,
+      "end_year": 2025,
+      "is_current": false,
+      "website": "",
+      "display_order": 2,
+      "created_at": "2026-09-18T00:00:00Z",
+      "updated_at": "2026-09-18T00:00:00Z"
+    }
+  }
+]

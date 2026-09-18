@@ -1,0 +1,36 @@
+<button
+    type="button"
+    class="button button-danger"
+    popovertarget="delete-{{ item_kind }}-{{ item_id }}"
+    aria-label="Delete {{ item_kind }}: {{ item_label }}"
+>
+    Delete
+</button>
+<div
+    id="delete-{{ item_kind }}-{{ item_id }}"
+    class="project-delete-modal"
+    popover="auto"
+    role="dialog"
+    aria-labelledby="delete-title-{{ item_id }}"
+    aria-describedby="delete-description-{{ item_id }}"
+>
+    <h2 id="delete-title-{{ item_id }}">Delete {{ item_kind }}?</h2>
+    <p id="delete-description-{{ item_id }}">
+        This will permanently remove <strong>{{ item_label }}</strong> from your portfolio.
+    </p>
+    <div class="project-delete-modal-actions">
+        <button
+            type="button"
+            class="button button-secondary"
+            popovertarget="delete-{{ item_kind }}-{{ item_id }}"
+            popovertargetaction="hide"
+            autofocus
+        >
+            Cancel
+        </button>
+        <form method="post" action="{{ delete_url }}">
+            {% csrf_token %}
+            <button type="submit" class="button button-danger">Delete {{ item_kind }}</button>
+        </form>
+    </div>
+</div>

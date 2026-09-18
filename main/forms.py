@@ -1,6 +1,6 @@
 from django import forms
 
-from main.models import Project
+from main.models import Education, Project
 
 
 class ProjectForm(forms.ModelForm):
@@ -36,5 +36,41 @@ class ProjectForm(forms.ModelForm):
             "summary": forms.Textarea(attrs={"rows": 3}),
             "contribution": forms.Textarea(attrs={"rows": 5}),
             "technologies": forms.Textarea(attrs={"rows": 3}),
+            "display_order": forms.NumberInput(attrs={"min": 0, "step": 1}),
+        }
+
+
+class EducationForm(forms.ModelForm):
+    """All editable education fields; Django supplies UUID and timestamps."""
+
+    class Meta:
+        model = Education
+        fields = [
+            "institution",
+            "degree",
+            "description",
+            "start_year",
+            "end_year",
+            "is_current",
+            "website",
+            "display_order",
+        ]
+        labels = {
+            "degree": "Degree / programme",
+            "is_current": "Currently studying",
+            "website": "Institution website",
+        }
+        help_texts = {
+            "description": "Optional faculty, focus, or programme details.",
+            "start_year": "Enter a year from 1900 to 2100.",
+            "end_year": "Required for completed studies; leave empty if currently studying.",
+            "is_current": "Select this for an ongoing degree or exchange semester.",
+            "website": "Optional full URL, for example https://www.example.edu/.",
+            "display_order": "Use 0 or a higher number. Lower numbers appear first.",
+        }
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+            "start_year": forms.NumberInput(attrs={"min": 1900, "max": 2100, "step": 1}),
+            "end_year": forms.NumberInput(attrs={"min": 1900, "max": 2100, "step": 1}),
             "display_order": forms.NumberInput(attrs={"min": 0, "step": 1}),
         }

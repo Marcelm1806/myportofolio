@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Education | {{ name }}{% endblock %}
+
+{% block content %}
+<section class="content-section education-section education-page" id="education" aria-labelledby="education-title">
+    <div class="container">
+        <header class="section-heading">
+            <p class="section-kicker">Academic background</p>
+            <h1 id="education-title">Education</h1>
+            <p>Degrees, exchange semesters, and the subjects that shaped my interests.</p>
+        </header>
+
+        <div class="education-toolbar">
+            <a href="{% url 'main:create_education' %}" class="button">+ Add education</a>
+        </div>
+
+        <form method="get" action="{% url 'main:show_education' %}" class="project-search education-search" role="search">
+            <div class="project-search-field">
+                <label for="education-search">Search institution or degree</label>
+                <input type="search" id="education-search" name="q" value="{{ query }}" placeholder="University or programme">
+            </div>
+            <div class="education-filter-field">
+                <label for="education-status">Study status</label>
+                <select id="education-status" name="status">
+                    <option value=""{% if not status_filter %} selected{% endif %}>All studies</option>
+                    <option value="current"{% if status_filter == "current" %} selected{% endif %}>Currently studying</option>
+                    <option value="completed"{% if status_filter == "completed" %} selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            <button type="submit" class="button">Search</button>
+            {% if query or status_filter %}
+                <a href="{% url 'main:show_education' %}" class="button button-secondary">Clear</a>
+            {% endif %}
+        </form>
+
+        <p class="education-results">{{ education_list|length }} {{ education_list|length|pluralize:"entry,entries" }}</p>
+        <div class="education-grid">
+            {% for education in education_list %}
+                {% include "components/education_card.html" with education=education show_actions=True %}
+            {% empty %}
+                <p class="empty-state">
+                    {% if query or status_filter %}
+                        No education entries match these filters.
+                    {% else %}
+                        No education entries have been added yet.
+                    {% endif %}
+                </p>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

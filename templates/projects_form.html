@@ -14,43 +14,7 @@
         <form method="post" action="{% url 'main:create_project' %}" class="project-form">
             {% csrf_token %}
 
-            {% if form.errors %}
-                <p class="form-error-summary" role="alert">
-                    Please correct the highlighted fields and submit again.
-                </p>
-            {% endif %}
-            {% for error in form.non_field_errors %}
-                <p class="form-error">{{ error }}</p>
-            {% endfor %}
-
-            {% for field in form %}
-                <div class="form-group{% if field.errors %} form-group-invalid{% endif %}">
-                    {% if field.field.widget.input_type == "checkbox" %}
-                        <div class="form-checkbox">
-                            {{ field }}
-                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                        </div>
-                    {% else %}
-                        <label for="{{ field.id_for_label }}">
-                            {{ field.label }}{% if field.field.required %} *{% endif %}
-                        </label>
-                        {{ field }}
-                    {% endif %}
-
-                    {% if field.help_text %}
-                        <p class="form-help" id="{{ field.auto_id }}_helptext">
-                            {{ field.help_text }}
-                        </p>
-                    {% endif %}
-                    {% if field.errors %}
-                        <ul class="form-errors" id="{{ field.auto_id }}_error">
-                            {% for error in field.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-                </div>
-            {% endfor %}
+            {% include "components/form_fields.html" %}
 
             <div class="form-actions">
                 <button type="submit" class="button">Save project</button>

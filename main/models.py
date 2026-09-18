@@ -1,5 +1,7 @@
 import uuid
 
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -87,3 +89,60 @@ class Project(models.Model):
             for line in self.technologies.splitlines()
             if line.strip()
         ]
+
+
+class Education(models.Model):
+    """An academic entry; use years because exact study dates are not known."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    institution = models.CharField(max_length=255)
+    degree = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    start_year = models.PositiveIntegerField(
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)],
+    )
+    end_year = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(1900), MaxValueValidator(2100)],
+    )
+    is_current = models.BooleanField(default=False)
+    website = models.URLField(blank=True)
+    display_order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["display_order", "-start_year", "institution", "id"]
+        verbose_name_plural = "education entries"
+
+    def __str__(self):
+        return f"{self.degree} — {self.institution}"
+
+    def clean(self):
+        """ModelForm calls this validation on both create and update."""
+        super().clean()
+        if self.is_current and self.end_year is not None:
+            raise ValidationError({
+                "end_year": "Leave the end year empty while currently studying.",
+            })
+        if not self.is_current and self.end_year is None:
+            raise ValidationError({
+                "end_year": "Enter an end year or select Currently studying.",
+            })
+        if (
+            self.start_year is not None
+            and self.end_year is not None
+            and self.end_year < self.start_year
+        ):
+            raise ValidationError({
+                "end_year": "The end year cannot be earlier than the start year.",
+            })
+
+    @property
+    def period_label(self):
+        if self.is_current:
+            return f"{self.start_year}–Present"
+        if self.end_year == self.start_year:
+            return str(self.start_year)
+        return f"{self.start_year}–{self.end_year}"

@@ -92,32 +92,13 @@
         </header>
 
         <div class="education-grid">
-            <article class="education-card">
-                <p class="education-year">2026</p>
-                <h3>Universitas Indonesia</h3>
-                <p class="education-degree">Exchange Semester</p>
-                <p>
-                    Faculty of Computer Science and Faculty of Economics
-                    and Business
-                </p>
-            </article>
-
-            <article class="education-card">
-                <p class="education-year">2024&ndash;Present</p>
-                <h3>Technical University of Darmstadt</h3>
-                <p class="education-degree">
-                    M.Sc. Business Information Systems
-                </p>
-            </article>
-
-            <article class="education-card">
-                <p class="education-year">2020&ndash;2025</p>
-                <h3>University of Mannheim</h3>
-                <p class="education-degree">
-                    B.Sc. Business Information Systems
-                </p>
-            </article>
+            {% for education in education_list %}
+                {% include "components/education_card.html" with education=education show_actions=False %}
+            {% empty %}
+                <p class="empty-state">No education entries have been added yet.</p>
+            {% endfor %}
         </div>
+        <a href="{% url 'main:show_education' %}" class="project-link">View education &rarr;</a>
     </div>
 </section>
 
