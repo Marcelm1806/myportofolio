@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, logout
@@ -5,14 +7,21 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core import serializers
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST, require_safe
+from django.views.decorators.vary import vary_on_cookie
 
 from main.forms import EducationForm, ProjectForm
 from main.models import Education, Experience, Project
+from main.permissions import (
+    can_edit_education,
+    can_manage_education,
+    education_access_context,
+)
 
 
 PROFILE = {
@@ -207,33 +216,114 @@ def _filtered_education(request):
         )
     if status:
         entries = entries.filter(is_current=(status == "current"))
+    if request.GET.get("starred") == "1":
+        # The filter always belongs to the session account, never a supplied ID.
+        entries = (
+            entries.filter(starred_by=request.user)
+            if request.user.is_authenticated else entries.none()
+        )
     return entries
 
 
 def _education_json(entries):
-    """One serializer for the API, filtered page, and unfiltered home preview."""
+    """Keep Assignment 3's public contract; star membership stays private."""
     return HttpResponse(
-        serializers.serialize("json", entries), content_type="application/json",
+        serializers.serialize("json", entries, fields=(
+            "institution", "degree", "description", "start_year", "end_year",
+            "is_current", "website", "display_order", "created_at", "updated_at",
+        )),
+        content_type="application/json",
     )
 
 
 @require_safe
+@vary_on_cookie
 def get_education_json(request):
     return _education_json(_filtered_education(request))
+
+
+def _attach_education_star_state(entries, user):
+    """One aggregate query enriches JSON-derived objects without N+1 lookups.
+
+    Only a count and the current account's boolean reach the template. The
+    public serializer intentionally omits all user IDs and account details.
+    """
+    membership = Education.starred_by.through.objects.filter(
+        education_id=OuterRef("pk"), user_id=user.pk,
+    )
+    own_star = (
+        Exists(membership) if user.is_authenticated
+        else Value(False, output_field=BooleanField())
+    )
+    state = {
+        row["pk"]: row
+        for row in Education.objects.filter(pk__in=[entry.pk for entry in entries])
+        .annotate(star_count=Count("starred_by"), is_starred=own_star)
+        .values("pk", "star_count", "is_starred")
+    }
+    for entry in entries:
+        values = state.get(entry.pk, {})
+        entry.star_count = values.get("star_count", 0)
+        entry.is_starred = values.get("is_starred", False)
 
 
 @require_safe
 def show_education(request):
     # Call the JSON view directly, following Tutorial 3, without an HTTP loop.
     entries = _objects_from_json(get_education_json(request))
+    _attach_education_star_state(entries, request.user)
     query, status = _education_filters(request)
     context = {
         "name": PROFILE["name"],
         "education_list": entries,
         "query": query,
         "status_filter": status,
+        "starred_only": request.GET.get("starred") == "1",
+        **education_access_context(request.user),
     }
     return render(request, "education.html", context)
+
+
+@require_safe
+def show_education_detail(request, education_id):
+    entry = get_object_or_404(Education, pk=education_id)
+    _attach_education_star_state([entry], request.user)
+    return render(request, "education_detail.html", {
+        "name": PROFILE["name"],
+        "education": entry,
+        **education_access_context(request.user),
+    })
+
+
+@login_required(login_url="main:login")
+@require_POST
+def toggle_education_star(request, education_id):
+    """Change only the caller's star and preserve the current education filter."""
+    entry = get_object_or_404(Education, pk=education_id)
+    if entry.starred_by.filter(pk=request.user.pk).exists():
+        entry.starred_by.remove(request.user)
+        action = "removed"
+    else:
+        entry.starred_by.add(request.user)
+        action = "added"
+    messages.success(request, f"Star {action}: {entry.institution}.")
+
+    # Construct local destinations ourselves; never trust an arbitrary next URL.
+    if request.POST.get("return_to") == "detail":
+        return redirect("main:show_education_detail", education_id=entry.pk)
+    filters = {}
+    query = request.POST.get("q", "").strip()
+    status = request.POST.get("status", "")
+    if query:
+        filters["q"] = query
+    if status in {"current", "completed"}:
+        filters["status"] = status
+    if request.POST.get("starred") == "1":
+        filters["starred"] = "1"
+    destination = reverse("main:show_education")
+    if filters:
+        destination += "?" + urlencode(filters)
+    return redirect(destination)
 
 
 def _education_form_response(request, *, instance=None):
@@ -260,7 +350,7 @@ def _education_form_response(request, *, instance=None):
 @login_required(login_url="main:login")
 @require_http_methods(["GET", "POST"])
 def create_education(request):
-    if not request.user.is_superuser:
+    if not can_manage_education(request.user):
         raise PermissionDenied
     return _education_form_response(request)
 
@@ -268,7 +358,7 @@ def create_education(request):
 @login_required(login_url="main:login")
 @require_http_methods(["GET", "POST"])
 def update_education(request, education_id):
-    if not request.user.is_superuser:
+    if not can_edit_education(request.user):
         raise PermissionDenied
     entry = get_object_or_404(Education, pk=education_id)
     return _education_form_response(request, instance=entry)
@@ -277,7 +367,7 @@ def update_education(request, education_id):
 @login_required(login_url="main:login")
 @require_POST
 def delete_education(request, education_id):
-    if not request.user.is_superuser:
+    if not can_manage_education(request.user):
         raise PermissionDenied
     entry = get_object_or_404(Education, pk=education_id)
     entry.delete()

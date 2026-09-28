@@ -17,13 +17,25 @@
             Institution website <span class="visually-hidden">for {{ education.institution }} (opens in a new tab)</span>
         </a>
     {% endif %}
-    {% if show_actions and user.is_superuser %}
+    {% if not is_detail %}
+        <a href="{% url 'main:show_education_detail' education.id %}" class="project-link education-detail-link">
+            View details <span class="visually-hidden">for {{ education.institution }}</span>
+        </a>
+    {% endif %}
+    {% if show_actions %}
+        <div class="education-card-stars">
+            {% include "components/education_star.html" %}
+        </div>
+    {% endif %}
+    {% if show_actions and can_edit_education %}
         <div class="education-card-actions">
             <a href="{% url 'main:update_education' education.id %}" class="button button-secondary" aria-label="Edit education: {{ education.institution }}">
                 Edit
             </a>
-            {% url 'main:delete_education' education.id as delete_url %}
-            {% include "components/delete_confirmation.html" with item_id=education.id item_label=education.institution item_kind="education" delete_url=delete_url %}
+            {% if can_manage_education %}
+                {% url 'main:delete_education' education.id as delete_url %}
+                {% include "components/delete_confirmation.html" with item_id=education.id item_label=education.institution item_kind="education" delete_url=delete_url %}
+            {% endif %}
         </div>
     {% endif %}
 </article>

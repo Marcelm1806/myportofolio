@@ -14,10 +14,12 @@ from main.views import (
     register,
     show_experience,
     show_education,
+    show_education_detail,
     show_main,
     show_project_detail,
     show_projects,
     toggle_star,
+    toggle_education_star,
     update_education,
 )
 
@@ -34,6 +36,16 @@ urlpatterns = [
     path("education/", show_education, name="show_education"),
     path("education/add/", create_education, name="create_education"),
     path("api/education/", get_education_json, name="get_education_json"),
+    path(
+        "education/<uuid:education_id>/star/",
+        toggle_education_star,
+        name="toggle_education_star",
+    ),
+    path(
+        "education/<uuid:education_id>/",
+        show_education_detail,
+        name="show_education_detail",
+    ),
     path(
         "education/<uuid:education_id>/edit/",
         update_education,

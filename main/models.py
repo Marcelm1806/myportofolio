@@ -117,6 +117,11 @@ class Education(models.Model):
     display_order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    starred_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="starred_education",
+        blank=True,
+    )
 
     class Meta:
         ordering = ["display_order", "-start_year", "institution", "id"]

@@ -19,10 +19,12 @@
         rel="stylesheet"
     >
 
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" href="{% static 'css/tutorial3.css' %}">
-    <link rel="stylesheet" href="{% static 'css/assignment3.css' %}">
-    <link rel="stylesheet" href="{% static 'css/tutorial4.css' %}">
+    {# Bump this version when changing CSS to avoid reusing older cached styles. #}
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=assignment4-20260928-2">
+    <link rel="stylesheet" href="{% static 'css/tutorial3.css' %}?v=assignment4-20260928-2">
+    <link rel="stylesheet" href="{% static 'css/assignment3.css' %}?v=assignment4-20260928-2">
+    <link rel="stylesheet" href="{% static 'css/tutorial4.css' %}?v=assignment4-20260928-2">
+    <link rel="stylesheet" href="{% static 'css/assignment4.css' %}?v=assignment4-20260928-2">
 </head>
 
 <body>

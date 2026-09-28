@@ -1,0 +1,54 @@
+/* Education permissions and stars reuse the portfolio's existing design. */
+
+.nav-user {
+    color: var(--ink);
+}
+
+.education-access {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+}
+
+.education-access p {
+    flex: 1 1 16rem;
+    color: var(--text-muted);
+}
+
+.education-role {
+    padding: 0.2rem 0.65rem;
+    color: var(--ink);
+    background: var(--accent-light);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.education-detail-link {
+    align-self: flex-start;
+    margin-top: 0.75rem;
+}
+
+.education-card-stars {
+    margin-top: auto;
+    padding-top: 1.25rem;
+}
+
+.education-card-stars + .education-card-actions {
+    margin-top: 0;
+    padding-top: 0.75rem;
+}
+
+.education-detail-container {
+    max-width: 800px;
+}
+
+.education-back-link {
+    margin-top: 1.5rem;
+}

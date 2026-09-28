@@ -240,7 +240,7 @@ summary:focus-visible {
 .hero-photo {
     position: relative;
     grid-area: photo;
-    width: 100%;
+    width: calc(100% - 1.25rem);
     max-width: 360px;
     margin-right: 1.25rem;
     margin-bottom: 1.25rem;
@@ -399,7 +399,7 @@ summary:focus-visible {
 .award-badge::before {
     margin-right: 0.4rem;
     content: "Award";
-    color: var(--accent-dark);
+    color: var(--ink);
 }
 
 .tag-list,

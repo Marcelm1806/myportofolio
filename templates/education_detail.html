@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}{{ education.institution }} | {{ name }}{% endblock %}
+
+{% block content %}
+<section class="content-section education-section" aria-labelledby="education-detail-title">
+    <div class="container education-detail-container">
+        <header class="section-heading">
+            <p class="section-kicker">Academic background</p>
+            <h1 id="education-detail-title">Education details</h1>
+        </header>
+        {% include "components/education_access.html" %}
+        {% include "components/education_card.html" with show_actions=True is_detail=True %}
+        <a href="{% url 'main:show_education' %}" class="button button-secondary education-back-link">Back to education</a>
+    </div>
+</section>
+{% endblock %}

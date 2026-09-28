@@ -1,0 +1,21 @@
+<form method="post" action="{% url 'main:toggle_education_star' education.id %}" class="star-form">
+    {% csrf_token %}
+    {% if is_detail %}
+        <input type="hidden" name="return_to" value="detail">
+    {% else %}
+        <input type="hidden" name="q" value="{{ query }}">
+        <input type="hidden" name="status" value="{{ status_filter }}">
+        {% if starred_only %}<input type="hidden" name="starred" value="1">{% endif %}
+    {% endif %}
+    <button
+        type="submit"
+        class="button button-star{% if education.is_starred %} is-starred{% endif %}"
+        aria-pressed="{% if education.is_starred %}true{% else %}false{% endif %}"
+        aria-label="{% if education.is_starred %}Unstar{% else %}Star{% endif %} {{ education.institution }} ({{ education.star_count }} stars)"
+        {% if not user.is_authenticated %}title="Log in to star this entry"{% endif %}
+    >
+        <span aria-hidden="true">&#9733;</span>
+        {% if education.is_starred %}Unstar{% else %}Star{% endif %}
+        <span class="star-count">{{ education.star_count }}</span>
+    </button>
+</form>

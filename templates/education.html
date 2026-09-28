@@ -11,7 +11,9 @@
             <p>Degrees, exchange semesters, and the subjects that shaped my interests.</p>
         </header>
 
-        {% if user.is_superuser %}
+        {% include "components/education_access.html" %}
+
+        {% if can_manage_education %}
             <div class="education-toolbar">
                 <a href="{% url 'main:create_education' %}" class="button">+ Add education</a>
             </div>
@@ -30,8 +32,17 @@
                     <option value="completed"{% if status_filter == "completed" %} selected{% endif %}>Completed</option>
                 </select>
             </div>
+            {% if user.is_authenticated %}
+                <div class="education-filter-field">
+                    <label for="education-star-filter">Stars</label>
+                    <select id="education-star-filter" name="starred">
+                        <option value=""{% if not starred_only %} selected{% endif %}>All entries</option>
+                        <option value="1"{% if starred_only %} selected{% endif %}>My starred entries</option>
+                    </select>
+                </div>
+            {% endif %}
             <button type="submit" class="button">Search</button>
-            {% if query or status_filter %}
+            {% if query or status_filter or starred_only %}
                 <a href="{% url 'main:show_education' %}" class="button button-secondary">Clear</a>
             {% endif %}
         </form>
@@ -42,7 +53,11 @@
                 {% include "components/education_card.html" with education=education show_actions=True %}
             {% empty %}
                 <p class="empty-state">
-                    {% if query or status_filter %}
+                    {% if starred_only and not user.is_authenticated %}
+                        Log in to view your starred entries.
+                    {% elif starred_only %}
+                        No starred education entries match these filters.
+                    {% elif query or status_filter %}
                         No education entries match these filters.
                     {% else %}
                         No education entries have been added yet.

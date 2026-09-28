@@ -1,0 +1,14 @@
+<aside class="education-access" aria-label="Your education access">
+    <span class="education-role">{{ education_role }}</span>
+    <p>
+        {% if can_manage_education %}
+            You can add, edit, delete, and star education entries.
+        {% elif can_edit_education %}
+            You can edit and star education entries. Adding and deleting are reserved for the owner.
+        {% elif user.is_authenticated %}
+            You can star entries and find them again with the My starred entries filter.
+        {% else %}
+            Everyone can explore this academic journey. <a href="{% url 'main:login' %}">Log in</a> to save your favourites with a star.
+        {% endif %}
+    </p>
+</aside>
