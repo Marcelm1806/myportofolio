@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -74,6 +75,11 @@ class Project(models.Model):
     award = models.CharField(max_length=255, blank=True)
     is_featured = models.BooleanField(default=False)
     display_order = models.PositiveIntegerField(default=0)
+    starred_by = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        related_name="starred_projects",
+        blank=True,
+    )
 
     class Meta:
         ordering = ["-is_featured", "display_order", "title"]

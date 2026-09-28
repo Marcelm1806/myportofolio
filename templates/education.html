@@ -11,9 +11,11 @@
             <p>Degrees, exchange semesters, and the subjects that shaped my interests.</p>
         </header>
 
-        <div class="education-toolbar">
-            <a href="{% url 'main:create_education' %}" class="button">+ Add education</a>
-        </div>
+        {% if user.is_superuser %}
+            <div class="education-toolbar">
+                <a href="{% url 'main:create_education' %}" class="button">+ Add education</a>
+            </div>
+        {% endif %}
 
         <form method="get" action="{% url 'main:show_education' %}" class="project-search education-search" role="search">
             <div class="project-search-field">

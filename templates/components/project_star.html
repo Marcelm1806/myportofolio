@@ -1,0 +1,16 @@
+{% with stargazers=project.starred_by.all %}
+<form method="post" action="{% url 'main:toggle_star' project.id %}" class="star-form">
+    {% csrf_token %}
+    <button
+        type="submit"
+        class="button button-star{% if user in stargazers %} is-starred{% endif %}"
+        aria-pressed="{% if user in stargazers %}true{% else %}false{% endif %}"
+        aria-label="{% if user in stargazers %}Unstar{% else %}Star{% endif %} {{ project.title }} ({{ stargazers|length }} stars)"
+        title="{% if stargazers %}Starred by {{ stargazers|join:', ' }}{% else %}Be the first to star{% endif %}"
+    >
+        <span aria-hidden="true">&#9733;</span>
+        {% if user in stargazers %}Unstar{% else %}Star{% endif %}
+        <span class="star-count">{{ stargazers|length }}</span>
+    </button>
+</form>
+{% endwith %}

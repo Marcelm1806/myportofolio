@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Login | {{ name }}{% endblock %}
+
+{% block content %}
+<section class="content-section auth-section" aria-labelledby="login-title">
+    <div class="container auth-container">
+        <header class="section-heading">
+            <p class="section-kicker">Welcome back</p>
+            <h1 id="login-title">Login</h1>
+            <p>Use your account to star projects.</p>
+        </header>
+        <form method="post" action="{% url 'main:login' %}" class="project-form">
+            {% csrf_token %}
+            {% include "components/form_fields.html" %}
+            <button type="submit" class="button">Login</button>
+        </form>
+        <p class="auth-alternative">No account yet? <a href="{% url 'main:register' %}">Register here</a>.</p>
+    </div>
+</section>
+{% endblock %}

@@ -18,9 +18,11 @@
             </p>
         </header>
 
-        <div class="project-toolbar">
-            <a href="{% url 'main:create_project' %}" class="button">+ Add project</a>
-        </div>
+        {% if user.is_superuser %}
+            <div class="project-toolbar">
+                <a href="{% url 'main:create_project' %}" class="button">+ Add project</a>
+            </div>
+        {% endif %}
 
         <form method="get" action="{% url 'main:show_projects' %}" class="project-search" role="search">
             <div class="project-search-field">
@@ -89,7 +91,10 @@
                         >
                             View project &rarr;
                         </a>
-                        {% include "components/project_delete_modal.html" with project=project %}
+                        {% include "components/project_star.html" with project=project %}
+                        {% if user.is_superuser %}
+                            {% include "components/project_delete_modal.html" with project=project %}
+                        {% endif %}
                     </div>
                 </article>
             {% empty %}

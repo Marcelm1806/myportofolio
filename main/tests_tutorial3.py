@@ -1,6 +1,7 @@
 import uuid
 from xml.etree import ElementTree
 
+from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -25,6 +26,9 @@ def project_data():
 class ProjectWriteTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.owner = get_user_model().objects.create_user(
+            username="project-test-owner", is_superuser=True, is_staff=True,
+        )
         cls.existing = Project.objects.create(
             title="Existing Portfolio Project",
             organization="Existing Organization",
@@ -37,6 +41,10 @@ class ProjectWriteTests(TestCase):
             summary="Another summary.",
             contribution="Another contribution.",
         )
+
+    def setUp(self):
+        # Tutorial 4: the same write behaviour now requires the owner account.
+        self.client.force_login(self.owner)
 
     def test_create_form_uses_current_fields_and_shared_layout(self):
         response = self.client.get(reverse("main:create_project"))
@@ -92,6 +100,7 @@ class ProjectWriteTests(TestCase):
 
     def test_create_requires_a_valid_csrf_token(self):
         client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
         url = reverse("main:create_project")
         self.assertEqual(client.post(url, project_data()).status_code, 403)
         self.assertEqual(Project.objects.count(), 2)
@@ -122,6 +131,7 @@ class ProjectWriteTests(TestCase):
 
     def test_delete_requires_a_valid_csrf_token(self):
         client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
         url = reverse("main:delete_project", args=[self.existing.pk])
         self.assertEqual(client.post(url).status_code, 403)
         self.assertTrue(Project.objects.filter(pk=self.existing.pk).exists())

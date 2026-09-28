@@ -2,7 +2,7 @@
 
 A responsive personal portfolio developed for Platform-Based Programming at the Faculty of Computer Science, Universitas Indonesia.
 
-The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation. Assignment 3 adds database-backed education with create/update forms, deletion, filtering, and JSON delivery, and also exposes experience as JSON.
+The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation. Assignment 3 adds database-backed education with create/update forms, deletion, filtering, and JSON delivery, and also exposes experience as JSON. Tutorial 4 adds registration, login/logout, session and cookie handling, owner-only changes, and project stars.
 
 [Assignment 1 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-1.html) · [Assignment 2 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-2.html) · [Assignment 3 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-3.html)
 
@@ -30,7 +30,11 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 - A native popover for confirming deletion through a CSRF-protected POST
 - Education validation for study periods, required fields, website URLs, and display order
 - JSON endpoints for projects, education, and experience; their list pages deserialize the JSON before rendering
-- Fifty automated test cases covering the portfolio, forms, validation, CSRF, and data delivery (execution status below)
+- Registration and login using Django's built-in forms, with the visiting account shown separately from the portfolio owner's name
+- A last-login cookie displayed on Home and removed on logout
+- Public portfolio pages; project and education changes restricted to superusers on the server
+- Project stars for signed-in accounts, with counts, usernames, and an unstar action
+- Seventy-two automated test cases covering the portfolio, forms, validation, CSRF, data delivery, authentication, and authorization (execution status below)
 
 The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, Flexbox, CSS variables, and `clamp()`; no frontend framework or JavaScript library is required.
 
@@ -39,6 +43,10 @@ The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, F
 | Page or section | URL | Content |
 | --- | --- | --- |
 | Home | `/` | Profile, education, and Data & AI |
+| Register | `/register/` | Create an ordinary visitor account, then redirect to Login |
+| Login | `/login/` | Authenticate, set session and last-login cookie, then redirect to Home |
+| Logout | `/logout/` | CSRF-protected POST; clear session and last-login cookie |
+| Star / unstar project | `/projects/<uuid>/star/` | CSRF-protected POST; requires a signed-in account |
 | Projects | `/projects/` | All project records from the database |
 | Title search | `/projects/?title=macan` | Case-insensitive matching on project titles |
 | Add project | `/projects/add/` | GET displays the form; a valid POST creates a record |
@@ -99,12 +107,12 @@ The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and 
 
 ## Local Setup
 
-These instructions are for a fresh checkout of the Assignment 3 branch. Install Python 3.13 and Git first.
+These instructions are for a fresh checkout of the Tutorial 4 branch. Install Python 3.13 and Git first.
 
 1. Clone the branch and enter the repository:
 
    ```bash
-   git clone --branch feature/assignment_3_education https://github.com/Marcelm1806/myportofolio.git
+   git clone --branch feature/tutorial_4_auth https://github.com/Marcelm1806/myportofolio.git
    cd myportofolio
    ```
 
@@ -143,7 +151,15 @@ These instructions are for a fresh checkout of the Assignment 3 branch. Install 
    python manage.py loaddata main/education.json
    ```
 
-   On an empty database, the fixture commands install three projects, one experience record, and three education entries. For an existing Tutorial 3 database, run `migrate` and load only `main/education.json` once to preserve project and experience edits. Without loading them, the corresponding pages display their empty states.
+   On an empty database, the fixture commands install three projects, one experience record, and three education entries. When upgrading an existing Assignment 3 database, run only `migrate`: do not reload fixtures over your edited records. The new migration adds the star relationship table and does not replace portfolio records. Without initial data, the corresponding pages display their empty states.
+
+   Create the portfolio owner's account if you do not already have a superuser:
+
+   ```bash
+   python manage.py createsuperuser
+   ```
+
+   Choose credentials locally. The Register page creates ordinary visitor accounts, never owner accounts. Accounts and passwords are not included in Git or in the portfolio fixtures.
 
 5. Check the configuration and run the tests:
 
@@ -188,11 +204,11 @@ To update the versioned portfolio content, edit the relevant fixture and reload 
 
 Projects, experience, and education are rendered from database records. Profile values come from the view; skills remain static. Education can be created, updated, deleted, and filtered in the browser. Projects retain their Tutorial 3 creation, deletion, title search, JSON/XML, and detail features. Project editing and experience editing remain outside this assignment's scope.
 
-Authentication and ownership checks are not implemented at this tutorial stage. Anyone who can reach the application can use its create/update/delete forms. CSRF checks protect against cross-site request forgery; they do not decide who is allowed to manage a portfolio. Public deployment with editing enabled needs an authorization design in a later iteration.
+Tutorial 4 adds authentication and authorization. Visitors can read the portfolio and its APIs. Registered accounts can star and unstar projects. Only superusers can add/delete projects or create/update/delete education entries; setting `is_staff` alone does not grant those actions. The same restrictions are checked in the views and reflected in the visible controls. CSRF remains enabled for state-changing forms.
 
 ## Testing and Verification
 
-The previously recorded Tutorial 3 result is **28 passing tests** on my Mac. Assignment 3 adds **22 test cases**, bringing the suite to **50**. I completed the local configuration and migration checks, the test suite, and the manual browser checks successfully on my Mac. The patch preparation environment checked Python syntax and patch application but could not install Django; runtime verification was performed locally.
+The previously recorded Tutorial 3 result was **28 passing tests** on my Mac. Assignment 3 added **22 test cases**, bringing that suite to **50**, and its local checks were reported successful. Tutorial 4 adds **22 further tests**, for **72 tests** in total. Existing write tests now authenticate as the owner; their original form and data assertions remain in place. In the Tutorial 4 patch preparation environment, Django 6.1.1 ran all **72 tests successfully**, the system check found no issues, and the migration check reported no pending model changes. An upgrade from migration 0004 to 0005 preserved every existing field of the three projects, one experience, and three education fixtures. These checks were run separately from my Mac. Local browser verification of this new patch is still required after applying it.
 
 | Test group | Count | Coverage |
 | --- | --- | --- |
@@ -206,6 +222,8 @@ The previously recorded Tutorial 3 result is **28 passing tests** on my Mac. Ass
 | Education write tests | 11 | Create/update/delete, preservation of other records, invalid input, generated-field protection, missing IDs, methods, and CSRF |
 | Education data tests | 9 | Typed JSON, actual JSON-to-template flow, filters, empty states, home synchronization, escaping, shared layouts, and experience JSON |
 | Education fixture and period tests | 2 | Repeatable fixture loading, model validation, preservation of independent entries, and year labels |
+| Tutorial 4 authentication tests | 12 | Registration, password validation/hashing, session persistence, login/logout cookies, inactive accounts, CSRF, and escaped cookie display |
+| Tutorial 4 authorization and star tests | 10 | Visitor redirects, ordinary/staff denial, owner controls, independent stars, HTTP methods, CSRF, missing IDs, and natural-key serialization |
 
 Run the full suite and development checks with:
 
@@ -243,6 +261,7 @@ For a manual browser check:
 | Assignment 2 | Added the `Project` model and migration, project list and detail pages, shared templates, fixtures, and additional tests. Restored the B. Braun content as database records and extended experience fields. |
 | Tutorial 3 | Added a Project ModelForm, title search, JSON/XML endpoints, the tutorial's JSON-to-template flow, POST-only deletion with confirmation, success messages, and 14 additional tests. |
 | Assignment 3 | Added Education with all CRUD actions, JSON delivery, text/status filtering, a synchronized home overview, shared form/card/confirmation components, experience JSON, a schema migration, fixture, and 22 additional tests. Local configuration, migration, test-suite, and browser checks completed successfully. |
+| Tutorial 4 | Added registration, login/logout, login status, a last-login cookie, superuser-only changes, project stars with a many-to-many migration, natural-key API output, and 22 tests. Local browser verification follows patch application. |
 
 ## Reflective Questions
 
@@ -361,9 +380,40 @@ Additional usability features include combined search/status filtering, result c
 
    For `/education/`, `show_education` calls the JSON view directly as a Python function and deserializes its response. `_objects_from_json()` takes the reconstructed objects and passes them to `education.html`, where properties such as `period_label` work again. The helper never saves those objects. There is no server-to-itself HTTP request and no browser-side fetch. This round trip intentionally demonstrates the week's serialization exercise; an ordinary server-rendered view could otherwise pass a QuerySet directly to its template.
 
+## Tutorial 4: Authentication, Sessions, Cookies, and Authorization
+
+This implementation follows [Tutorial 4](https://pbp.cs.ui.ac.id/en/tutorial/tutorial-4.html), adapted to the existing Assignment 3 portfolio. `UserCreationForm` hashes passwords and applies the configured password validators. `AuthenticationForm` validates credentials; `login()` records the account in Django's session. The session cookie identifies the visitor, while `PROFILE` still identifies Marcel as the portfolio owner.
+
+Successful login sets a separate `last_login` cookie, formatted in UTC, which Home reads through `request.COOKIES`. This display cookie never grants access. Logout clears the session and deletes the cookie without deleting the account or its stars. The cookie uses `HttpOnly`, `SameSite=Lax`, and `Secure` when `DEBUG=False`. Login returns to Home, as in the tutorial; it does not follow the `next` parameter.
+
+| Account | Read pages and APIs | Star/unstar projects | Add/delete projects; manage education |
+| --- | --- | --- | --- |
+| Anonymous visitor | Yes | Redirect to Login | Redirect to Login |
+| Registered account | Yes | Yes | 403 Forbidden |
+| Staff account without superuser status | Yes | Yes | 403 Forbidden |
+| Superuser / portfolio owner | Yes | Yes | Yes |
+
+`login_required` protects write views, followed by an explicit `is_superuser` check where owner access is required. The existing education forms receive the same protection so they do not remain publicly writable. Hidden buttons only reflect these server-side checks. This does not implement Assignment 4's additional role or additional-section interaction yet.
+
+`Project.starred_by` is a many-to-many relationship to `settings.AUTH_USER_MODEL`, with reverse name `starred_projects`. Migration `0005_project_starred_by` adds the relationship table while keeping existing projects, education, and experience intact. The toggle endpoint uses only `request.user`, never a submitted account ID. Each account can add or remove its own star independently. The count remains visible on mobile, and the title hint lists usernames.
+
+Project JSON and XML use `use_natural_foreign_keys=True`: the public relationship contains usernames rather than numeric account IDs. No password hashes or other account fields are serialized. The existing title filter and JSON-to-template data flow are retained. Merely loading a page does not save deserialized objects.
+
+All changes use standard HTML forms and CSRF tokens; no JavaScript is required. Logout is a POST button in the navbar, and star/unstar is POST-only. These are deliberate adjustments to the tutorial's GET logout example and its harmless-GET star handler: visiting a URL alone cannot change state. The optional Selenium example would need to click the Logout button instead of requesting `/logout/` with GET. Selenium and Burp Suite are optional and are not added as runtime dependencies.
+
+For local verification after applying the patch:
+
+1. Run `python manage.py migrate`, `python manage.py check`, `python manage.py test`, and `python manage.py makemigrations --check --dry-run`.
+2. As a visitor, open Home, Projects, Experience, and Education. Login/Register should appear; management controls should not. Clicking Star should lead to Login.
+3. Register an ordinary account. Try mismatching passwords and an existing username, then log in successfully. Confirm that the navbar shows the visitor username while the profile still shows Marcel.
+4. Inspect `sessionid`, `last_login`, and `csrftoken` in browser storage. Confirm the timestamp on Home. Use Logout and verify the session and timestamp cookie are removed.
+5. As the ordinary account, star/unstar a project, check the count and `/api/projects/`, and confirm `/projects/add/` returns 403. Try a second account to confirm independent stars.
+6. Log in with your superuser. Add/delete a temporary project and create/edit/delete a temporary education entry. Preserve the actual portfolio records.
+7. Check the navigation and forms at desktop and mobile widths. If CSS is cached, use a hard refresh.
+
 ## AI Usage Disclosure
 
-I used **ChatGPT** for explanations, implementation suggestions, substantial Python/HTML/CSS code, fixtures, tests, debugging, Git instructions, and README drafting.
+I used **ChatGPT** for explanations, implementation suggestions, fixtures, tests etc.
 | Stage | Assistance requested | Review or limitation |
 | --- | --- | --- |
 | Earlier assignments | Help with the responsive portfolio, models, and template structure | I supplied the real portfolio content, tested locally, and reported layout and data issues. |
@@ -372,6 +422,7 @@ I used **ChatGPT** for explanations, implementation suggestions, substantial Pyt
 | Assignment 3 planning | Implement the official assignment in one compatible patch | Education was chosen as an additional section, with year-based fields to avoid inventing exact study dates. |
 | Assignment 3 code | Create/update/delete forms, JSON delivery, shared templates, and validation | The patch was based on the exact GitHub commit `ce1d5855ee719b5682ef8202455835003237b360`; static checks and patch-application checks were used during preparation. |
 | Assignment 3 verification | Add tests for the new behavior and document the data flow | 22 tests were added. Django could not be installed in the patch preparation environment. I subsequently ran the test suite and browser checks successfully on my Mac and reported the result. |
+| Tutorial 4 | Adapt the official tutorial to the latest GitHub version as a patch | ChatGPT/Codex read the tutorial, inspected commit `8d78e2572819b5536f015672dc431a02b015bbd5`, generated the implementation and tests, and ran automated checks in a separate environment. My Mac and browser verification is not claimed by those checks. |
 
 AI assistance can produce code that looks plausible without proving that it runs. Static syntax checks cannot establish database migration compatibility, successful requests, or mobile usability. I therefore checked locally rather than treating its static checks as a runtime result. Understanding the update, CSRF, and JSON flow remains my responsibility when explaining the implementation.
 
@@ -379,4 +430,4 @@ The documentation distinguishes AI preparation from my local verification. The f
 
 ### Further Development
 
-Possible next steps include authentication and authorization for changes, project editing, and reproducible dependency versions. Skills remain static. These are future improvements, not features claimed in the current assignment.
+Possible next steps include Assignment 4's additional role and education interaction, project editing, and reproducible dependency versions. Skills remain static. These are future improvements, not features claimed in Tutorial 4.

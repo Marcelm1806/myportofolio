@@ -4,6 +4,7 @@ import io
 import uuid
 from unittest.mock import patch
 
+from django.contrib.auth import get_user_model
 from django.core import serializers
 from django.core.management import call_command
 from django.http import HttpResponse
@@ -31,6 +32,9 @@ def education_data(**changes):
 class EducationWriteTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.owner = get_user_model().objects.create_user(
+            username="education-test-owner", is_superuser=True, is_staff=True,
+        )
         cls.existing = Education.objects.create(
             institution="Existing University", degree="Existing degree",
             start_year=2018, end_year=2021,
@@ -39,6 +43,9 @@ class EducationWriteTests(TestCase):
             institution="Other University", degree="Other degree",
             start_year=2024, is_current=True,
         )
+
+    def setUp(self):
+        self.client.force_login(self.owner)
 
     def test_create_form_has_editable_fields_and_no_generated_inputs(self):
         response = self.client.get(reverse("main:create_education"))
@@ -185,6 +192,7 @@ class EducationWriteTests(TestCase):
 
     def test_create_update_and_delete_require_csrf_tokens(self):
         client = Client(enforce_csrf_checks=True)
+        client.force_login(self.owner)
         urls = (
             reverse("main:create_education"),
             reverse("main:update_education", args=[self.existing.pk]),
@@ -207,6 +215,9 @@ class EducationWriteTests(TestCase):
 class EducationDataTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.owner = get_user_model().objects.create_user(
+            username="education-layout-owner", is_superuser=True, is_staff=True,
+        )
         cls.current = Education.objects.create(
             institution="Current University", degree="M.Sc. Data Science",
             description="Research & practical work", start_year=2024,
@@ -289,6 +300,7 @@ class EducationDataTests(TestCase):
         self.assertNotContains(response, "Renamed University")
 
     def test_user_content_is_escaped_and_controls_target_each_record(self):
+        self.client.force_login(self.owner)
         self.current.institution = '<script>alert("test")</script>'
         self.current.description = '<img src=x onerror="alert(1)">'
         self.current.save()
@@ -308,6 +320,7 @@ class EducationDataTests(TestCase):
         self.assertEqual(Education.objects.count(), 2)
 
     def test_full_pages_share_one_base_layout_and_education_navigation(self):
+        self.client.force_login(self.owner)
         project = Project.objects.create(
             title="Test project", organization="Example",
             summary="Summary", contribution="Contribution",

@@ -1,0 +1,81 @@
+/* Authentication and stars share the existing portfolio colours and layout. */
+
+.site-header .container {
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    padding-block: 0.75rem;
+}
+
+.site-header nav {
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+}
+
+.nav-user {
+    max-width: 14rem;
+    padding: 0.25rem 0.65rem;
+    overflow-wrap: anywhere;
+    color: var(--accent-dark);
+    background: var(--accent-light);
+    border-radius: var(--radius-small);
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.nav-logout-form,
+.star-form {
+    margin: 0;
+}
+
+.nav-logout {
+    padding: 0.35rem 0;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.nav-logout:hover {
+    text-decoration: underline;
+}
+
+.auth-container {
+    max-width: 720px;
+}
+
+.auth-alternative {
+    margin-top: 1.25rem;
+}
+
+.form-help ul {
+    padding-left: 1.25rem;
+}
+
+.button-star {
+    gap: 0.4rem;
+}
+
+.button-star.is-starred {
+    color: var(--ink);
+    background: var(--accent-light);
+    border-color: var(--accent-dark);
+}
+
+.star-count {
+    padding: 0.05rem 0.4rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.8rem;
+}
+
+.project-card-featured .button-star {
+    border-color: var(--accent-light);
+}
+
+.meta-row dd {
+    overflow-wrap: anywhere;
+}

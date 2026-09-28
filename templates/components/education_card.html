@@ -17,7 +17,7 @@
             Institution website <span class="visually-hidden">for {{ education.institution }} (opens in a new tab)</span>
         </a>
     {% endif %}
-    {% if show_actions %}
+    {% if show_actions and user.is_superuser %}
         <div class="education-card-actions">
             <a href="{% url 'main:update_education' education.id %}" class="button button-secondary" aria-label="Edit education: {{ education.institution }}">
                 Edit
