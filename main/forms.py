@@ -1,10 +1,28 @@
 from django import forms
+from django.utils.html import strip_tags
 
 from main.models import Education, Project
 
 
 class ProjectForm(forms.ModelForm):
     """Create projects using the portfolio's existing model fields."""
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Both the regular form and the AJAX endpoint store plain text.
+        # Output escaping is still necessary for existing or imported records.
+        for name in (
+            "title", "organization", "context_label", "summary",
+            "contribution", "technologies", "award",
+        ):
+            if name not in cleaned_data:
+                continue
+            value = strip_tags(cleaned_data[name]).strip()
+            if self.fields[name].required and not value:
+                self.add_error(name, "Enter text, not just HTML tags.")
+            else:
+                cleaned_data[name] = value
+        return cleaned_data
 
     class Meta:
         model = Project

@@ -8,7 +8,8 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.core import serializers
 from django.core.exceptions import PermissionDenied
 from django.db.models import BooleanField, Count, Exists, OuterRef, Q, Value
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -122,11 +123,37 @@ def _filtered_projects(request):
 
 
 @require_safe
+@vary_on_cookie
 def get_projects_json(request):
-    data = serializers.serialize(
-        "json", _filtered_projects(request), use_natural_foreign_keys=True,
-    )
-    return HttpResponse(data, content_type="application/json")
+    # A custom JSON representation can include state belonging to this session.
+    # prefetch_related in _filtered_projects avoids a query per card.
+    data = []
+    user_id = request.user.pk if request.user.is_authenticated else None
+    for project in _filtered_projects(request):
+        supporters = list(project.starred_by.all())
+        fields = {
+            name: getattr(project, name)
+            for name in ProjectForm.Meta.fields
+        }
+        fields.update({
+            "technology_list": project.technology_list,
+            "star_count": len(supporters),
+            "is_starred": any(user.pk == user_id for user in supporters),
+            "starred_by_names": ", ".join(user.username for user in supporters),
+            # Preserve Tutorial 4's public username-only relation format.
+            "starred_by": [[user.username] for user in supporters],
+        })
+        data.append({
+            "model": "main.project",
+            "pk": str(project.pk),
+            "fields": fields,
+            "urls": {
+                "detail": reverse("main:show_project_detail", args=[project.pk]),
+                "star": reverse("main:toggle_star", args=[project.pk]),
+                "delete": reverse("main:delete_project", args=[project.pk]),
+            },
+        })
+    return JsonResponse(data, safe=False)
 
 
 @require_safe
@@ -139,14 +166,19 @@ def get_projects_xml(request):
 
 @require_safe
 def show_projects(request):
-    # Tutorial 3: demonstrate serialization and deserialization explicitly.
-    # This is a Python function call, not an HTTP request to our own server.
-    response = get_projects_json(request)
-    project_list = _objects_from_json(response)
+    # Tutorial 5: the browser requests the records separately with fetch().
+    title_query = request.GET.get("title", "").strip()
     context = {
         "name": PROFILE["name"],
-        "project_list": project_list,
-        "title_query": request.GET.get("title", "").strip(),
+        "title_query": title_query,
+        "form": ProjectForm(),
+        "project_config": {
+            "jsonUrl": reverse("main:get_projects_json"),
+            "createUrl": reverse("main:create_project_ajax"),
+            "csrfToken": get_token(request),
+            "isSuperuser": request.user.is_superuser,
+            "initialQuery": title_query,
+        },
     }
     return render(request, "projects.html", context)
 
@@ -165,6 +197,20 @@ def create_project(request):
 
     context = {"name": PROFILE["name"], "form": form}
     return render(request, "projects_form.html", context)
+
+
+@require_POST
+def create_project_ajax(request):
+    # JSON clients need an explicit 403, not a redirect to an HTML login page.
+    if not request.user.is_superuser:
+        return JsonResponse({"message": "Only the portfolio owner can add projects."}, status=403)
+    form = ProjectForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+    project = form.save()
+    return JsonResponse({
+        "message": "Project added successfully.", "pk": str(project.pk),
+    }, status=201)
 
 
 @login_required(login_url="main:login")

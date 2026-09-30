@@ -2,7 +2,7 @@
 
 A responsive personal portfolio developed for Platform-Based Programming at the Faculty of Computer Science, Universitas Indonesia.
 
-The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation. Assignment 3 adds database-backed education with create/update forms, deletion, filtering, and JSON delivery, and also exposes experience as JSON. Tutorial 4 adds registration, login/logout, session and cookie handling, owner-only changes, and project stars. Assignment 4 extends Education with an Editor role, personal stars, a favourites filter, and public detail pages.
+The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation. Assignment 3 adds database-backed education with create/update forms, deletion, filtering, and JSON delivery, and also exposes experience as JSON. Tutorial 4 adds registration, login/logout, session and cookie handling, owner-only changes, and project stars. Assignment 4 extends Education with an Editor role, personal stars, a favourites filter, and public detail pages. Tutorial 5 loads and searches projects with JavaScript, adds projects through an AJAX popover form, and provides reusable toast notifications.
 
 [Assignment 1 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-1.html) · [Assignment 2 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-2.html) · [Assignment 3 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-3.html) · [Assignment 4 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-4.html)
 
@@ -29,7 +29,10 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 - Project title search and JSON/XML endpoints with the same filter
 - A native popover for confirming deletion through a CSRF-protected POST
 - Education validation for study periods, required fields, website URLs, and display order
-- JSON endpoints for projects, education, and experience; their list pages deserialize the JSON before rendering
+- Project cards loaded from JSON with `fetch()`; Education and Experience retain their server-side JSON-to-template flow
+- Live project search with a 300 ms debounce, request cancellation, loading/error states, and retry
+- Owner-only AJAX creation, inline form errors, and reusable success/error toast notifications
+- Escaped card content and plain-text form cleaning for XSS protection
 - Registration and login using Django's built-in forms, with the visiting account shown separately from the portfolio owner's name
 - A last-login cookie displayed on Home and removed on logout
 - Public portfolio pages; project creation/deletion and education creation/deletion restricted to the owner
@@ -38,9 +41,9 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 - Public education detail pages and consistent permission-aware controls
 - Education JSON retains its public fields without exposing star membership or account details
 - Project stars for signed-in accounts, with counts, usernames, and an unstar action
-- Ninety-two automated test cases covering the portfolio, forms, validation, CSRF, data delivery, authentication, and authorization (execution status below)
+- 105 Django tests and 13 JavaScript tests covering the portfolio, forms, permissions, AJAX, and security boundaries (execution status below)
 
-The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, Flexbox, CSS variables, and `clamp()`; no frontend framework or JavaScript library is required.
+The frontend uses HTML5, CSS3, vanilla JavaScript modules, and Django Template Language. It uses CSS Grid, Flexbox, CSS variables, and `clamp()`; no frontend framework or JavaScript library is required.
 
 ## Pages and Navigation
 
@@ -51,10 +54,11 @@ The frontend uses HTML5, CSS3, and Django Template Language. It uses CSS Grid, F
 | Login | `/login/` | Authenticate, set session and last-login cookie, then redirect to Home |
 | Logout | `/logout/` | CSRF-protected POST; clear session and last-login cookie |
 | Star / unstar project | `/projects/<uuid>/star/` | CSRF-protected POST; requires a signed-in account |
-| Projects | `/projects/` | All project records from the database |
+| Projects | `/projects/` | Browser fetches and displays project records from JSON |
 | Title search | `/projects/?title=macan` | Case-insensitive matching on project titles |
-| Add project | `/projects/add/` | GET displays the form; a valid POST creates a record |
-| Projects as JSON | `/api/projects/` | Serialized project records; supports `?title=...` |
+| Add project | `/projects/add/` | Original full-page owner form remains available |
+| Add project with AJAX | `/projects/add-ajax/` | Owner-only POST; JSON 201 on success, 400 on invalid input, 403 without permission |
+| Projects as JSON | `/api/projects/` | Records plus star count, session-specific state, and local action URLs; supports `?title=...` |
 | Projects as XML | `/api/projects/xml/` | The same records and filter represented as XML |
 | Delete project | `/projects/<uuid>/delete/` | POST only; linked through the confirmation popover |
 | Project detail | `/projects/<uuid>/` | One selected project |
@@ -89,6 +93,8 @@ The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and 
 | `main/permissions.py` | Shared Education owner/editor predicates and UI access context |
 | `main/tests_tutorial4.py` | Authentication, session/cookie, project-star and permission tests |
 | `main/tests_assignment4.py` | Four-role checks, Admin assignment, Education stars, API privacy and query cost |
+| `main/tests_tutorial5.py` | AJAX contracts, roles, CSRF, query cost, and text cleaning |
+| `tests/js/tutorial5.test.js` | Card escaping, debounce, stale responses, request errors, CSRF, and toast timers |
 | `main/urls.py` | Named routes in the `main` namespace |
 | `main/tests.py` | Automated model, page, and fixture tests |
 | `main/tests_tutorial3.py` | Creation, deletion, CSRF, filtering, JSON, and XML tests |
@@ -99,10 +105,12 @@ The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and 
 | `main/fixtures/main/education.json` | Universitas Indonesia, TU Darmstadt, and Mannheim education entries |
 | `templates/base.html` | Shared document structure, navigation, footer, and content block |
 | `templates/index.html` | Profile, education, and Data & AI content |
-| `templates/projects.html` | Project list and empty state |
+| `templates/projects.html` | Project-list shell, search, feedback states, and safe JSON configuration |
+| `templates/components/project_form_modal.html` | Owner-only creation popover using the existing ProjectForm |
+| `templates/components/toast.html` | Reusable manual notification popover |
 | `templates/projects_form.html` | Project creation form, help text, and validation errors |
-| `templates/components/project_delete_modal.html` | Project-specific arguments for the shared confirmation component |
-| `templates/components/delete_confirmation.html` | Confirmation UI shared by projects and education |
+| `templates/components/project_delete_modal.html` | Earlier server-rendered project confirmation wrapper, retained for reuse |
+| `templates/components/delete_confirmation.html` | Server-rendered Education confirmation; JavaScript cards preserve the same pattern |
 | `templates/components/form_fields.html` | Shared labels, widgets, help text, and field errors |
 | `templates/components/education_card.html` | Education card shared by the home overview and education page |
 | `templates/education.html` | Education list, filters, actions, and empty states |
@@ -117,17 +125,22 @@ The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and 
 | `static/css/assignment3.css` | Education cards, action layout, and status-filter styling |
 | `static/css/tutorial4.css` | Authentication navigation, login/register forms and star buttons |
 | `static/css/assignment4.css` | Education role panel, stars and detail-page layout |
+| `static/css/tutorial5.css` | Creation popover, toast and AJAX feedback styles |
+| `static/js/projects.js` | Browser events, card rendering, form feedback, and list refresh |
+| `static/js/project-utils.js` | Escaping, card markup, debounce, fetch controller, and AJAX submission |
+| `static/js/toast.js` | Reusable notifications using textContent and cancellable timers |
+| `package.json` | Optional dependency-free Node test command; no frontend build step |
 | `static/img/Download.jpeg` | Profile photograph |
 | `manage.py` | Django management commands |
 
 ## Local Setup
 
-These instructions are for a fresh checkout of the Assignment 4 branch. Install Python 3.13 and Git first.
+These instructions are for a fresh checkout of the Tutorial 5 branch after it has been pushed. Install Python 3.13 and Git first. Node.js 22+ is optional for the additional JavaScript unit tests; it is not needed to run Django.
 
 1. Clone the branch and enter the repository:
 
    ```bash
-   git clone --branch feature/assignment_4_roles https://github.com/Marcelm1806/myportofolio.git
+   git clone --branch feature/tutorial_5_ajax https://github.com/Marcelm1806/myportofolio.git
    cd myportofolio
    ```
 
@@ -166,7 +179,7 @@ These instructions are for a fresh checkout of the Assignment 4 branch. Install 
    python manage.py loaddata main/education.json
    ```
 
-   On an empty database, the fixture commands install three projects, one experience record, and three education entries. When upgrading an existing Assignment 3 database, run only `migrate`: do not reload fixtures over your edited records. Migrations 0005 and 0006 add the Project and Education star relationship tables and do not replace portfolio records. Without initial data, the corresponding pages display their empty states.
+   On an empty database, the fixture commands install three projects, one experience record, and three education entries. When upgrading an existing database, run only `migrate`: do not reload fixtures over your edited records. Migrations 0005 and 0006 add the Project and Education star relationship tables and do not replace portfolio records. Tutorial 5 adds no model fields or migrations. Without initial data, the corresponding pages display their empty states.
 
    Create the portfolio owner's account if you do not already have a superuser:
 
@@ -211,7 +224,7 @@ The model's `clean()` method rejects an end year before the start year, an end y
 
 ### Loading and Updating Data
 
-The JSON fixtures are a reproducible source for the initial portfolio records. Views retrieve the imported records through the ORM; templates render those database values.
+The JSON fixtures are a reproducible source for the initial portfolio records. Views retrieve the imported records through the ORM. JavaScript renders the Project JSON as cards; the other sections use Django templates.
 
 Fixture entries have fixed UUIDs. Loading the same fixture again updates those entries instead of creating additional copies. It also restores their fields to the fixture values, overwriting edits to those same records. Separately created records with different IDs are preserved. [Django fixture documentation](https://docs.djangoproject.com/en/6.1/howto/initial-data/)
 
@@ -219,15 +232,17 @@ To update the versioned portfolio content, edit the relevant fixture and reload 
 
 ### Current Scope
 
-Projects, experience, and education are rendered from database records. Profile values come from the view; skills remain static. Education can be created, updated, deleted, and filtered in the browser. Projects retain their Tutorial 3 creation, deletion, title search, JSON/XML, and detail features. Project editing and experience editing remain outside this assignment's scope.
+Projects, experience, and education are rendered from database records. Profile values come from the view; skills remain static. Education can be created, updated, deleted, and filtered in the browser. Projects retain their Tutorial 3 creation, deletion, title search, JSON/XML, and detail features. Tutorial 5 moves list rendering and creation from page reloads to browser-side requests; star and delete remain CSRF-protected HTML POST forms. Project editing and experience editing remain outside this assignment's scope.
 
 Tutorial 4 provides authentication and session/cookie handling. Assignment 4 permits registered accounts to star/unstar Education as well as Projects. Education updates require the owner or membership of `Editor`; creating/deleting Education and creating/deleting Projects remain owner-only. `is_staff` alone grants none of these portfolio write actions. The views enforce the rules, and template controls reflect those same rules. CSRF remains enabled for state-changing forms.
 
 ## Testing and Verification
 
-The previously recorded Tutorial 3 result was **28 passing tests** on my Mac. Assignment 3 added **22 test cases**, bringing that suite to **50**, and its local checks were reported successful. Tutorial 4 added **22 further tests**, taking the suite to **72**. Assignment 4 adds **20 tests**, bringing the current total to **92**. Existing write tests now authenticate as the owner; their original form and data assertions remain in place. In the Tutorial 4 patch preparation environment, Django 6.1.1 ran all **72 tests successfully**, the system check found no issues, and the migration check reported no pending model changes. An upgrade from migration 0004 to 0005 preserved every existing field of the three projects, one experience, and three education fixtures. These checks were run separately from my Mac. Local browser verification of this new patch is still required after applying it.
+The previously recorded Tutorial 3 result was **28 passing tests** on my Mac. Assignment 3 added **22 test cases**, bringing that suite to **50**, and its local checks were reported successful. Tutorial 4 added **22 further tests**, taking the suite to **72**. Assignment 4 adds **20 tests**, bringing that version to **92**. Existing write tests now authenticate as the owner; their original form and data assertions remain in place. In the Tutorial 4 patch preparation environment, Django 6.1.1 ran all **72 tests successfully**, the system check found no issues, and the migration check reported no pending model changes. An upgrade from migration 0004 to 0005 preserved every existing field of the three projects, one experience, and three education fixtures. These checks were run separately from my Mac. Browser verification is separate from those automated preparation results.
 
-The Assignment 4 preparation run passed **all 92 tests** on Django 6.1.1. `check` reported no issues and `makemigrations --check --dry-run` reported no changes. Upgrading from 0005 to 0006 preserved all fields of the three Education, three Project and one Experience records, plus an existing Project star. The development server returned HTTP 200 for Home, Projects, Experience, Education, an Education detail page, the Education API and the new stylesheet. These are separate preparation checks; applying the patches, configuring local accounts/Editor membership, and checking browser interaction on my Mac are still pending.
+The Assignment 4 preparation run passed **all 92 tests** on Django 6.1.1. `check` reported no issues and `makemigrations --check --dry-run` reported no changes. Upgrading from 0005 to 0006 preserved all fields of the three Education, three Project and one Experience records, plus an existing Project star. The development server returned HTTP 200 for Home, Projects, Experience, Education, an Education detail page, the Education API and the new stylesheet. Those were separate preparation checks. Assignment 4 was subsequently applied and pushed as commit `a6ee42a217d1301ce1e8dff277f84bd1c4725b7b`, and I reported that the appearance looked correct.
+
+Tutorial 5 adds **13 Django tests**, for **105 passing tests**, and **13 passing JavaScript unit tests**. The preparation environment used Python 3.12.14, Django 6.1.1, and Node.js 24.19.0. The configuration check found no issues and the migration dry run found no changes. A development-server smoke check returned HTTP 200 for Home, Projects, Experience, Education, both tested Project JSON queries, and the new CSS/JavaScript assets with the expected MIME types. GET on the creation endpoint returned 405 as intended. Earlier Project tests were adapted to assert the new JSON/card flow; authorization and data-preservation checks remain. JavaScript tests exercise rendering/escaping, debounce, stale response prevention, error handling, CSRF submission, and toast replacement. These results do not claim a browser layout test or verification on my Mac. Tutorial 5 browser checks remain pending after patch application.
 
 | Test group | Count | Coverage |
 | --- | --- | --- |
@@ -246,6 +261,8 @@ The Assignment 4 preparation run passed **all 92 tests** on Django 6.1.1. `check
 | Assignment 4 permissions | 9 | Four roles, direct URL denial, editor validation, control visibility, role revocation, forged role input, Admin assignment and project boundaries |
 | Assignment 4 stars | 7 | Independent membership, CSRF, methods, missing IDs, safe return paths, filter feedback and account deletion |
 | Assignment 4 data and rendering | 4 | API field allowlist, private per-account filtering, public detail pages and one-query star aggregation |
+| Tutorial 5 AJAX | 13 | List shell, JSON star state, constant query cost, owner creation, role denial, validation, CSRF, and input cleaning |
+| Tutorial 5 JavaScript (Node) | 13 | Escaped cards and URLs, debounce, request races, HTTP errors, submission and toast timers |
 
 Run the full suite and development checks with:
 
@@ -257,7 +274,13 @@ git diff --check
 
 The recorded Assignment 2 results were 14 passing tests, `No changes detected`, and no whitespace errors. That local test run also printed a warning about the missing collected `staticfiles/` directory; the test suite completed successfully. The full Tutorial 3 test suite subsequently completed successfully: 28 tests passed. Assignment 3 adds `0004_education.py`; it must be applied before starting the updated site.
 
-Tests run against a separate test database. Example names used in test cases are test data. These checks exercise model behavior and rendered HTTP responses; they do not measure browser layout or verify the truth of portfolio claims.
+Optional JavaScript checks, with Node.js 22+ and no package installation:
+
+```bash
+node --test tests/js/*.test.js
+```
+
+Django tests run against a separate test database. Example names used in test cases are test data. These checks exercise model behavior and rendered HTTP responses; they do not measure browser layout or verify the truth of portfolio claims.
 
 For a manual browser check:
 
@@ -284,7 +307,8 @@ For a manual browser check:
 | Tutorial 3 | Added a Project ModelForm, title search, JSON/XML endpoints, the tutorial's JSON-to-template flow, POST-only deletion with confirmation, success messages, and 14 additional tests. |
 | Assignment 3 | Added Education with all CRUD actions, JSON delivery, text/status filtering, a synchronized home overview, shared form/card/confirmation components, experience JSON, a schema migration, fixture, and 22 additional tests. Local configuration, migration, test-suite, and browser checks completed successfully. |
 | Tutorial 4 | Added registration, login/logout, login status, a last-login cookie, superuser-only changes, project stars with a many-to-many migration, natural-key API output, and 22 tests. Local browser verification follows patch application. |
-| Assignment 4 | Added the Admin-managed Editor role, Education stars, public details, a personal star filter, shared role checks, private API output and 20 tests. Automated preparation checks are recorded below; verification on my Mac remains pending. |
+| Assignment 4 | Added the Admin-managed Editor role, Education stars, public details, a personal star filter, shared role checks, private API output and 20 tests; applied and pushed, with appearance checked locally. |
+| Tutorial 5 | Added AJAX project loading and creation, live search, toast feedback, safe rendering, and 13 Django plus 13 JavaScript tests. Local browser verification follows patch application. |
 
 ## Reflective Questions
 
@@ -347,7 +371,7 @@ The Assignment 1 and Assignment 2 answers below describe their respective submit
 
 ## Tutorial 3: Forms and Data Delivery
 
-The implementation adapts [Tutorial 3](https://pbp.cs.ui.ac.id/en/tutorial/tutorial-3.html) to the existing portfolio. `ProjectForm` uses `organization`, `summary`, `contribution`, `technologies`, and the other existing fields. It does not introduce the tutorial example's differently named fields. `base.html` already supplies the document structure and the single `<main>` element; child templates fill its `content` block and use the existing `title` block.
+This section records the Tutorial 3 baseline; Tutorial 5 later replaces its Project list data flow. The implementation adapts [Tutorial 3](https://pbp.cs.ui.ac.id/en/tutorial/tutorial-3.html) to the existing portfolio. `ProjectForm` uses `organization`, `summary`, `contribution`, `technologies`, and the other existing fields. It does not introduce the tutorial example's differently named fields. `base.html` already supplies the document structure and the single `<main>` element; child templates fill its `content` block and use the existing `title` block.
 
 On GET, `create_project` displays an unbound form. On POST, it binds the submitted data, validates it, saves one new record if valid, and redirects to the project list. Invalid input renders the same bound form with errors and the submitted values. An explicit method check binds even an empty POST so required-field errors are shown. [Django ModelForm documentation](https://docs.djangoproject.com/en/6.1/topics/forms/modelforms/)
 
@@ -387,7 +411,7 @@ Additional usability features include combined search/status filtering, result c
 
    On submission, `is_valid()` checks field values and the model's study-period rules before `save()` is called. For editing, `instance=entry` preserves the selected record's identity. Explicitly listing editable fields also prevents submitted UUID or timestamp values from becoming writable through this form.
 
-   Each POST form includes `{% csrf_token %}`. Django's CSRF middleware checks the submitted token and applicable origin information to reduce the risk of another website causing a visitor's browser to submit an unwanted action. This applies to creation, editing, and deletion. A missing or invalid token is rejected. CSRF protection is distinct from authentication and permission checks; the current coursework app does not yet restrict editing to an authenticated owner.
+   Each POST form includes `{% csrf_token %}`. Django's CSRF middleware checks the submitted token and applicable origin information to reduce the risk of another website causing a visitor's browser to submit an unwanted action. This applies to creation, editing, and deletion. A missing or invalid token is rejected. CSRF protection is distinct from authentication and permission checks; that Assignment 3 version did not yet restrict editing to an authenticated owner; Tutorials 4 and Assignment 4 added the access rules documented below.
 
 2. **Why is JSON often preferred to XML in modern web applications?**
 
@@ -422,7 +446,7 @@ Successful login sets a separate `last_login` cookie, formatted in UTC, which Ho
 
 Project JSON and XML use `use_natural_foreign_keys=True`: the public relationship contains usernames rather than numeric account IDs. No password hashes or other account fields are serialized. The existing title filter and JSON-to-template data flow are retained. Merely loading a page does not save deserialized objects.
 
-All changes use standard HTML forms and CSRF tokens; no JavaScript is required. Logout is a POST button in the navbar, and star/unstar is POST-only. These are deliberate adjustments to the tutorial's GET logout example and its harmless-GET star handler: visiting a URL alone cannot change state. The optional Selenium example would need to click the Logout button instead of requesting `/logout/` with GET. Selenium and Burp Suite are optional and are not added as runtime dependencies.
+At the Tutorial 4 stage, all changes used standard HTML forms and CSRF tokens without JavaScript. Tutorial 5 now uses AJAX for project creation; the existing full-page form, star/unstar, and logout still work through standard POST forms. Logout is a POST button in the navbar, and star/unstar is POST-only. These are deliberate adjustments to the tutorial's GET logout example and its harmless-GET star handler: visiting a URL alone cannot change state. The optional Selenium example would need to click the Logout button instead of requesting `/logout/` with GET. Selenium and Burp Suite are optional and are not added as runtime dependencies.
 
 For local verification after applying the patch:
 
@@ -487,6 +511,42 @@ The official English page still contains a placeholder rather than specific refl
 
 The relevant extras beyond the required role/star behavior are the personal starred filter, public detail navigation, filter-preserving feedback, visible access explanations, accessible toggle state, and aggregate query optimization. A high rubric score still depends on correct local behavior, timely submission, accurate documentation, and explaining the code; passing automated tests does not guarantee a grade.
 
+## Tutorial 5: JavaScript, AJAX, and Safe Rendering
+
+This implementation follows [Tutorial 5](https://pbp.cs.ui.ac.id/en/tutorial/tutorial-5.html), using the supplied September 29 PDF and the current Assignment 4 commit as its base. The instructions explicitly allow adapting the example to existing fields and design. No schema change, fixture reload, new framework, or build step is needed.
+
+| Tutorial requirement | Portfolio implementation |
+| --- | --- |
+| Reusable notifications | `components/toast.html` in the shared base and `toast.js`; manual popover, success/error styling, dismissal, replacement timers, and textContent |
+| Fetch project JSON | `show_projects` renders the shell and an unbound ProjectForm; JavaScript fetches `/api/projects/` and creates the cards |
+| Include stars | Custom JsonResponse includes `star_count`, `is_starred`, and `starred_by_names`; the relation is prefetched |
+| Live title search | Trimmed `title` parameter, `icontains`, 300 ms debounce, AbortController, and a generation check for late responses |
+| Add-project popover | Owner-only form using all existing editable fields; native Cancel, Escape, and outside-click dismissal |
+| Create without a page reload | POST `/projects/add-ajax/` with FormData and a CSRF header; validate ProjectForm, return JSON, reset on success, refresh the current search |
+| Validation and access errors | JSON 400 with field errors, JSON 403 for unauthorized accounts, inline messages, and error toast; failed submissions retain input |
+| XSS protection | Escape every dynamic card value; use textContent for errors/toasts; strip tags from new form text and reject required values that become empty |
+
+The Project JSON keeps `model`, `pk`, and `fields` for compatibility and adds local action URLs generated with Django `reverse()`. Its computed fields make it a display API, not a document to pass back into Django's model deserializer. The view no longer deserializes Project JSON. Education and Experience retain their existing flow. Project XML remains available through Django's serializer and does not contain the new computed star fields.
+
+The current model uses `summary`, `contribution`, and `technologies` in place of the tutorial example's `description` and `tech_stack`. Organization, project context, award, featured styling, and display order are preserved. The existing model has no image or external project URL field, so none is invented for this tutorial.
+
+`escapeHtml` handles ampersands, angle brackets, and both kinds of quotation mark. The renderer also checks that action URLs are local paths: escaping HTML alone would not block a `javascript:` URL. `ProjectForm.clean()` calls `super().clean()`, then applies `strip_tags().strip()` to editable text fields and attaches field-specific validation errors. Both creation endpoints share it. Stripping tags is an extra data-cleaning step, not a guarantee of HTML safety: old/imported content must still be escaped, and text such as `List<String>` loses its tag-shaped portion. No intentionally unsafe XSS demo is left in the application.
+
+Authorization remains server-side. Ordinary members, staff-only accounts, and Education Editors cannot add projects, even by posting directly to the AJAX endpoint. The endpoint deliberately returns JSON 403 instead of redirecting to a login page. CSRF middleware remains enabled; a middleware rejection can be HTML, which the client handles as an error. The client disables repeated submission while saving and does not automatically retry an uncertain network failure.
+
+The interface keeps the featured dark card, tags, expandable contributions, and responsive grid. Loading, no data, no matches, and request failure have distinct states. Search also supports Enter, a Search button, Clear, a retained query value, and a matching URL. A successful addition refreshes the active search; a new project that does not match that search will remain filtered out. The original `/projects/add/` page remains usable; the dynamic project list requires JavaScript. Native popovers are used in current Brave/Chromium and other browsers with Popover API support.
+
+### Local verification after applying Tutorial 5
+
+1. Run `python manage.py check`, `python manage.py test`, `python manage.py makemigrations --check --dry-run`, and `git diff --check`. Optionally run the Node test command above.
+2. As a visitor, open Projects. Confirm the real cards load, contribution sections expand, and detail links work. Search mixed-case titles, type quickly, clear the query, and try a title that matches nothing.
+3. As the owner, open Add project. Check all fields, Cancel/Escape, and the scrollable form at desktop and approximately 390 px width. Create only a temporary test record; confirm the popover closes, a success toast appears, and the matching card arrives without a page reload.
+4. Try a temporary title containing only `<img src=x onerror="alert(1)">`. The form must reject it, retain the input, show a title error and an error toast, and execute no JavaScript. Cancel afterwards.
+5. Check star/unstar and owner deletion (cancel once, then delete the temporary record). Check the member/Editor/owner Education permissions and original account navigation.
+6. In browser developer tools, temporarily block the Project API request to exercise the error state. Unblock it and use Try again. Stop only the development server to simulate a lost connection while adding, and check the list before retrying to avoid an accidental duplicate.
+
+Tutorial 5's PDF states a deadline of **Wednesday, September 30, 2026** and requires a public GitHub **commit URL** showing the final result, pushed before the deadline. This README records implementation and preparation tests, not submission or deployment. Local verification, commit, push, and SCELE submission are still to be completed for Tutorial 5.
+
 ## AI Usage Disclosure
 
 I used **ChatGPT** for explanations, implementation suggestions, fixtures, tests etc.
@@ -499,7 +559,8 @@ I used **ChatGPT** for explanations, implementation suggestions, fixtures, tests
 | Assignment 3 code | Create/update/delete forms, JSON delivery, shared templates, and validation | The patch was based on the exact GitHub commit `ce1d5855ee719b5682ef8202455835003237b360`; static checks and patch-application checks were used during preparation. |
 | Assignment 3 verification | Add tests for the new behavior and document the data flow | 22 tests were added. Django could not be installed in the patch preparation environment. I subsequently ran the test suite and browser checks successfully on my Mac and reported the result. |
 | Tutorial 4 | Adapt the official tutorial to the latest GitHub version as a patch | ChatGPT/Codex read the tutorial, inspected commit `8d78e2572819b5536f015672dc431a02b015bbd5`, generated the implementation and tests, and ran automated checks in a separate environment. My Mac and browser verification is not claimed by those checks. |
-| Assignment 4 | Continue on top of the prepared Tutorial 4 patch without applying or pushing either from my Mac yet | ChatGPT/Codex checked the official checklist, generated the roles/stars implementation, tests and README, and prepared a separate dependent patch. Tests exercise the full access matrix and actual Admin membership assignment. Human browser review and role setup remain pending until I apply the patches. |
+| Assignment 4 | Continue on top of Tutorial 4 and review the appearance | ChatGPT/Codex generated the roles/stars implementation, tests and README. I subsequently applied and pushed it and reported that the appearance was correct. |
+| Tutorial 5 | Adapt the uploaded tutorial PDF to my latest code and provide a patch | ChatGPT/Codex implemented JavaScript, AJAX, validation, tests and documentation against commit `a6ee42a217d1301ce1e8dff277f84bd1c4725b7b`. The separate preparation run passed 105 Django tests and 13 JavaScript tests; I still need to apply the patch and verify the browser behavior locally. |
 
 AI assistance can produce code that looks plausible without proving that it runs. Static syntax checks cannot establish database migration compatibility, successful requests, or mobile usability. I therefore checked locally rather than treating its static checks as a runtime result. Understanding the update, CSRF, and JSON flow remains my responsibility when explaining the implementation.
 

@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="{% static 'css/assignment3.css' %}?v=assignment4-20260928-2">
     <link rel="stylesheet" href="{% static 'css/tutorial4.css' %}?v=assignment4-20260928-2">
     <link rel="stylesheet" href="{% static 'css/assignment4.css' %}?v=assignment4-20260928-2">
+    <link rel="stylesheet" href="{% static 'css/tutorial5.css' %}?v=tutorial5-20260930">
 </head>
 
 <body>
@@ -75,5 +76,9 @@
             </p>
         </div>
     </footer>
+    {% block overlays %}{% endblock %}
+    {% include "components/toast.html" %}
+    <script type="module" src="{% static 'js/toast.js' %}?v=tutorial5-20260930"></script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

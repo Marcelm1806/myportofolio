@@ -1,0 +1,167 @@
+/* Tutorial 5: native popovers and asynchronous feedback in the portfolio theme. */
+[hidden] {
+    display: none !important;
+}
+
+.project-list-status {
+    margin-bottom: 1.25rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.project-grid[aria-busy="true"] {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.project-load-error {
+    padding: 1.25rem;
+    border: 1px solid #9f312b;
+    border-radius: var(--radius-small);
+    color: #7e2520;
+    background: var(--surface);
+}
+
+.project-load-error .button {
+    margin-top: 0.75rem;
+}
+
+.project-form-modal {
+    position: fixed;
+    inset: 0;
+    width: min(48rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: clamp(1.25rem, 4vw, 2.25rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-large);
+    box-shadow: var(--shadow);
+}
+
+.project-form-modal::backdrop {
+    background: rgb(28 25 23 / 45%);
+}
+
+.project-form-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.project-form-modal h2 {
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    line-height: 1.1;
+}
+
+.project-form-description {
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+}
+
+.project-form-modal .project-form {
+    max-width: none;
+    padding: 0;
+    background: transparent;
+    border: 0;
+}
+
+.popover-close {
+    flex-shrink: 0;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-small);
+    font: inherit;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.popover-close:hover {
+    background: var(--accent-light);
+}
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.toast {
+    position: fixed;
+    inset: auto 1.25rem 1.25rem auto;
+    width: min(26rem, calc(100% - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: 0;
+    padding: 1rem;
+    overflow: auto;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--accent);
+    border-radius: var(--radius-small);
+    box-shadow: var(--shadow);
+    opacity: 0;
+    transform: translateY(0.6rem);
+    transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.toast:popover-open {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.toast.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast[data-type="success"] {
+    border-left-color: #356447;
+}
+
+.toast[data-type="error"] {
+    border-left-color: #9f312b;
+}
+
+.toast-copy {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.toast-title {
+    font-weight: 800;
+}
+
+.toast-message {
+    margin-top: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 520px) {
+    .toast {
+        right: 1rem;
+        bottom: 1rem;
+    }
+
+    .project-form-modal .form-actions .button {
+        flex-grow: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        transition: none;
+        transform: none;
+    }
+}

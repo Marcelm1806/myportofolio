@@ -213,19 +213,20 @@ class AuthorizationAndStarTests(TestCase):
                 self.client.force_login(account)
             projects = self.client.get(reverse("main:show_projects"))
             education = self.client.get(reverse("main:show_education"))
-            project_add = f'href="{reverse("main:create_project")}"'
+            project_add = 'popovertarget="add-project-modal"'
             education_add = f'href="{reverse("main:create_education")}"'
             if account == self.owner:
                 self.assertContains(projects, project_add)
-                self.assertContains(projects, f'popovertarget="delete-project-{self.project.pk}"')
+                self.assertTrue(projects.context["project_config"]["isSuperuser"])
                 self.assertContains(education, education_add)
                 self.assertContains(education, f'href="{reverse("main:update_education", args=[self.education.pk])}"')
             else:
                 self.assertNotContains(projects, project_add)
-                self.assertNotContains(projects, f'popovertarget="delete-project-{self.project.pk}"')
+                self.assertFalse(projects.context["project_config"]["isSuperuser"])
                 self.assertNotContains(education, education_add)
                 self.assertNotContains(education, f'href="{reverse("main:update_education", args=[self.education.pk])}"')
-            self.assertContains(projects, f'action="{reverse("main:toggle_star", args=[self.project.pk])}"')
+            records = self.client.get(reverse("main:get_projects_json")).json()
+            self.assertEqual(records[0]["urls"]["star"], reverse("main:toggle_star", args=[self.project.pk]))
 
     def test_guest_star_redirects_without_changing_membership(self):
         response = self.client.post(reverse("main:toggle_star", args=[self.project.pk]))
@@ -240,15 +241,17 @@ class AuthorizationAndStarTests(TestCase):
         response = self.client.post(url, {"user_id": self.other.pk}, follow=True)
         self.assertRedirects(response, reverse("main:show_projects"))
         self.assertEqual(self.project.starred_by.count(), 2)
-        self.assertContains(response, 'aria-pressed="true"')
-        self.assertContains(response, "Unstar")
-        self.assertContains(response, 'class="star-count">2</span>')
-        self.assertContains(response, "star-user")
-        self.assertContains(response, "other-user")
+        fields = self.client.get(reverse("main:get_projects_json")).json()[0]["fields"]
+        self.assertTrue(fields["is_starred"])
+        self.assertEqual(fields["star_count"], 2)
+        self.assertIn("star-user", fields["starred_by_names"])
+        self.assertIn("other-user", fields["starred_by_names"])
         self.client.get(reverse("main:show_projects"))
         self.assertEqual(self.project.starred_by.count(), 2)
         response = self.client.post(url, follow=True)
-        self.assertContains(response, 'aria-pressed="false"')
+        fields = self.client.get(reverse("main:get_projects_json")).json()[0]["fields"]
+        self.assertFalse(fields["is_starred"])
+        self.assertEqual(fields["star_count"], 1)
         self.assertEqual(list(self.project.starred_by.values_list("pk", flat=True)), [self.other.pk])
 
     def test_owner_can_star_too(self):
@@ -297,8 +300,7 @@ class AuthorizationAndStarTests(TestCase):
         xml = self.client.get(reverse("main:get_projects_xml"))
         root = ElementTree.fromstring(xml.content)
         self.assertCountEqual([node.text for node in root.findall(".//natural")], ["star-user", "other-user"])
-        html = self.client.get(reverse("main:show_projects"), {"title": " star test "})
-        self.assertContains(html, self.project.title)
-        self.assertContains(html, 'class="star-count">2</span>')
-        self.assertContains(html, "star-user")
-        self.assertContains(html, "other-user")
+        data = self.client.get(reverse("main:get_projects_json"), {"title": " star test "}).json()
+        self.assertEqual(data[0]["fields"]["title"], self.project.title)
+        self.assertEqual(data[0]["fields"]["star_count"], 2)
+        self.assertFalse(data[0]["fields"]["is_starred"])

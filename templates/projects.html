@@ -1,112 +1,54 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Projects | {{ name }}{% endblock %}
 
 {% block content %}
-<section
-    class="content-section projects-section"
-    id="projects"
-    aria-labelledby="projects-title"
->
+<section class="content-section projects-section" id="projects" aria-labelledby="projects-title">
     <div class="container">
         <header class="section-heading">
             <p class="section-kicker">Selected work</p>
             <h1 id="projects-title">Projects &amp; Collaborations</h1>
-            <p>
-                Selected university work at the intersection of data,
-                artificial intelligence, and business.
-            </p>
+            <p>Selected university work at the intersection of data, artificial intelligence, and business.</p>
         </header>
 
         {% if user.is_superuser %}
             <div class="project-toolbar">
-                <a href="{% url 'main:create_project' %}" class="button">+ Add project</a>
+                <button type="button" class="button" popovertarget="add-project-modal">+ Add project</button>
+                <noscript><a href="{% url 'main:create_project' %}">Open the full-page project form</a></noscript>
             </div>
         {% endif %}
 
-        <form method="get" action="{% url 'main:show_projects' %}" class="project-search" role="search">
+        <form id="project-search-form" method="get" action="{% url 'main:show_projects' %}" class="project-search" role="search">
             <div class="project-search-field">
                 <label for="project-title-search">Search by project title</label>
-                <input
-                    type="search"
-                    id="project-title-search"
-                    name="title"
-                    value="{{ title_query }}"
-                    placeholder="Enter part of a project title"
-                >
+                <input type="search" id="project-title-search" name="title" value="{{ title_query }}" placeholder="Enter part of a project title" aria-controls="project-grid">
             </div>
             <button type="submit" class="button">Search</button>
-            {% if title_query %}
-                <a href="{% url 'main:show_projects' %}" class="button button-secondary">Clear</a>
-            {% endif %}
+            <button type="button" id="clear-project-search" class="button button-secondary"{% if not title_query %} hidden{% endif %}>Clear</button>
         </form>
 
-        <div class="project-grid">
-            {% for project in project_list %}
-                <article class="project-card{% if project.is_featured %} project-card-featured{% endif %}">
-                    <div class="project-header">
-                        <p class="project-company">
-                            {{ project.organization }}
-                        </p>
-
-                        {% if project.context_label %}
-                            <p class="project-context">
-                                {{ project.context_label }}
-                            </p>
-                        {% endif %}
-                    </div>
-
-                    <h2>{{ project.title }}</h2>
-
-                    <p class="project-summary">
-                        {{ project.summary }}
-                    </p>
-
-                    {% if project.award %}
-                        <p class="award-badge">{{ project.award }}</p>
-                    {% endif %}
-
-                    {% with technologies=project.technology_list %}
-                        {% if technologies %}
-                            <ul
-                                class="tag-list"
-                                aria-label="Technologies and topics for {{ project.title }}"
-                            >
-                                {% for technology in technologies %}
-                                    <li>{{ technology }}</li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-                    {% endwith %}
-
-                    <details class="project-details">
-                        <summary>My contribution</summary>
-                        <p>{{ project.contribution|linebreaksbr }}</p>
-                    </details>
-                    <div class="project-card-actions">
-                        <a
-                            href="{% url 'main:show_project_detail' project.id %}"
-                            class="project-link"
-                            aria-label="View project: {{ project.title }}"
-                        >
-                            View project &rarr;
-                        </a>
-                        {% include "components/project_star.html" with project=project %}
-                        {% if user.is_superuser %}
-                            {% include "components/project_delete_modal.html" with project=project %}
-                        {% endif %}
-                    </div>
-                </article>
-            {% empty %}
-                <p class="empty-state">
-                    {% if title_query %}
-                        No projects match your search.
-                    {% else %}
-                        No projects have been added yet.
-                    {% endif %}
-                </p>
-            {% endfor %}
+        <noscript><p class="empty-state">Enable JavaScript to load and search projects.</p></noscript>
+        <p id="project-list-status" class="project-list-status" role="status" aria-live="polite">Loading projects…</p>
+        <div id="project-load-error" class="project-load-error" role="alert" hidden>
+            <p>Projects could not be loaded. Please try again.</p>
+            <button type="button" id="retry-projects" class="button button-secondary">Try again</button>
         </div>
+        <p id="project-empty-state" class="empty-state" hidden>
+            {% if title_query %}No projects match your search.{% else %}No projects have been added yet.{% endif %}
+        </p>
+        <div id="project-grid" class="project-grid" aria-busy="true"></div>
     </div>
 </section>
+{% endblock %}
+
+{% block overlays %}
+    {% if user.is_superuser %}
+        {% include "components/project_form_modal.html" %}
+    {% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {{ project_config|json_script:"project-config" }}
+    <script type="module" src="{% static 'js/projects.js' %}?v=tutorial5-20260930"></script>
 {% endblock %}

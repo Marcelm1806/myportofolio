@@ -1,0 +1,19 @@
+<div id="add-project-modal" class="project-form-modal" popover="auto" role="dialog" aria-labelledby="add-project-title" aria-describedby="add-project-description">
+    <header class="project-form-modal-header">
+        <div>
+            <p class="section-kicker">Portfolio management</p>
+            <h2 id="add-project-title">Add a project</h2>
+        </div>
+        <button type="button" class="popover-close" popovertarget="add-project-modal" popovertargetaction="hide" aria-label="Close add-project form">×</button>
+    </header>
+    <p id="add-project-description" class="project-form-description">Share your work, your contribution, and the technologies you used. Fields marked * are required.</p>
+    <form id="project-form" class="project-form" method="post" action="{% url 'main:create_project' %}">
+        {% csrf_token %}
+        <p id="project-form-error" class="form-error-summary" role="alert" tabindex="-1" hidden></p>
+        {% include "components/form_fields.html" %}
+        <div class="form-actions">
+            <button type="submit" id="project-submit" class="button">Save project</button>
+            <button type="button" class="button button-secondary" popovertarget="add-project-modal" popovertargetaction="hide">Cancel</button>
+        </div>
+    </form>
+</div>

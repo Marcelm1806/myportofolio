@@ -72,7 +72,8 @@ class ProjectWriteTests(TestCase):
         self.assertEqual(created.display_order, 2)
         self.assertTrue(created.is_featured)
         self.assertContains(response, "Project added successfully.")
-        self.assertContains(response, created.title)
+        records = self.client.get(reverse("main:get_projects_json")).json()
+        self.assertIn(created.title, [item["fields"]["title"] for item in records])
         self.existing.refresh_from_db()
         self.assertEqual(self.existing.summary, "Keep this existing summary.")
 
@@ -185,14 +186,13 @@ class ProjectDataDeliveryTests(TestCase):
         query = {"title": "  mAcAn  "}
         html = self.client.get(reverse("main:show_projects"), query)
         self.assertEqual(html.context["title_query"], "mAcAn")
-        self.assertContains(html, self.featured.title)
+        self.assertEqual(html.context["project_config"]["initialQuery"], "mAcAn")
         self.assertNotContains(html, self.other.title)
-        self.assertContains(html, "Python")
-        self.assertContains(html, "SQL")
-        self.assertContains(html, 'project-card-featured')
 
         records = self.client.get(reverse("main:get_projects_json"), query).json()
         self.assertEqual([item["pk"] for item in records], [str(self.featured.pk)])
+        self.assertEqual(records[0]["fields"]["technology_list"], ["Python", "SQL"])
+        self.assertTrue(records[0]["fields"]["is_featured"])
         xml = self.client.get(reverse("main:get_projects_xml"), query)
         root = ElementTree.fromstring(xml.content)
         self.assertEqual([item.attrib["pk"] for item in root.findall("object")], [str(self.featured.pk)])

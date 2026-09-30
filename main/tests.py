@@ -70,17 +70,17 @@ class ProjectPageTests(TestCase):
             technologies="Python\nSQL",
         )
 
-    def test_projects_page_displays_model_data(self):
+    def test_projects_page_loads_model_data_from_json(self):
         response = self.client.get(reverse("main:show_projects"))
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "projects.html")
-        self.assertContains(response, self.project.title)
-        self.assertContains(response, self.project.organization)
-        self.assertContains(response, self.project.summary)
-        self.assertContains(response, self.project.contribution)
-        self.assertContains(response, "Python")
-        self.assertContains(response, "SQL")
+        self.assertContains(response, 'id="project-grid"')
+        self.assertNotContains(response, self.project.title)
+        data = self.client.get(reverse("main:get_projects_json")).json()[0]["fields"]
+        for name in ("title", "organization", "summary", "contribution"):
+            self.assertEqual(data[name], getattr(self.project, name))
+        self.assertEqual(data["technology_list"], ["Python", "SQL"])
 
     def test_empty_projects_page(self):
         Project.objects.all().delete()
@@ -151,7 +151,8 @@ class ProjectDetailTests(TestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_project_list_links_to_each_detail_page(self):
-        response = self.client.get(reverse("main:show_projects"))
+        records = self.client.get(reverse("main:get_projects_json")).json()
+        links = {item["pk"]: item["urls"]["detail"] for item in records}
 
         for project in (self.project, self.other_project):
             with self.subTest(project=project.title):
@@ -159,7 +160,8 @@ class ProjectDetailTests(TestCase):
                     "main:show_project_detail",
                     kwargs={"project_id": project.pk},
                 )
-                self.assertContains(response, f'href="{url}"')
+                self.assertEqual(links[str(project.pk)], url)
+                self.assertEqual(self.client.get(url).status_code, 200)
 
 
 class ProjectFixtureTests(TestCase):
