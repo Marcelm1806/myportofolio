@@ -1,5 +1,6 @@
+import { bindAjaxForm } from "./ajax-form.js?v=assignment5-20260930";
 import { showToast } from "./toast.js?v=tutorial5-20260930";
-import { createProjectLoader, debounce, renderProjectCard, submitProject } from "./project-utils.js?v=tutorial5-20260930";
+import { createProjectLoader, debounce, renderProjectCard } from "./project-utils.js?v=assignment5-20260930";
 
 const config = JSON.parse(document.getElementById("project-config").textContent);
 const grid = document.getElementById("project-grid");
@@ -68,76 +69,14 @@ window.addEventListener("popstate", () => {
     refreshProjects();
 });
 
-const form = document.getElementById("project-form");
-if (form) {
-    const modal = document.getElementById("add-project-modal");
-    const submit = document.getElementById("project-submit");
-    const summary = document.getElementById("project-form-error");
-
-    function clearErrors() {
-        summary.hidden = true;
-        summary.textContent = "";
-        form.querySelectorAll("[data-ajax-error]").forEach(element => element.remove());
-        form.querySelectorAll(".form-group-invalid").forEach(group => group.classList.remove("form-group-invalid"));
-        form.querySelectorAll("[aria-invalid]").forEach(field => {
-            field.removeAttribute("aria-invalid");
-            const ids = (field.getAttribute("aria-describedby") || "").split(" ").filter(id => id && !id.endsWith("_ajax_error"));
-            if (ids.length) field.setAttribute("aria-describedby", ids.join(" "));
-            else field.removeAttribute("aria-describedby");
-        });
-    }
-
-    function displayErrors(error) {
-        summary.textContent = error.message;
-        summary.hidden = false;
-        for (const [name, errors] of Object.entries(error.errors || {})) {
-            const field = form.elements.namedItem(name);
-            if (!field || !Array.isArray(errors)) continue;
-            const group = field.closest(".form-group");
-            if (!group) continue;
-            const list = document.createElement("ul");
-            list.id = `${field.id}_ajax_error`;
-            list.className = "form-errors";
-            list.dataset.ajaxError = "true";
-            for (const error of errors) {
-                const item = document.createElement("li");
-                item.textContent = error.message;
-                list.append(item);
-            }
-            group.append(list);
-            group.classList.add("form-group-invalid");
-            field.setAttribute("aria-invalid", "true");
-            field.setAttribute("aria-describedby", `${field.getAttribute("aria-describedby") || ""} ${list.id}`.trim());
-        }
-        summary.focus();
-    }
-
-    modal.addEventListener("toggle", event => {
-        if (event.newState === "open") form.elements.namedItem("title").focus();
-    });
-    form.addEventListener("submit", async event => {
-        event.preventDefault();
-        if (submit.disabled) return;
-        clearErrors();
-        submit.disabled = true;
-        submit.textContent = "Saving…";
-        form.setAttribute("aria-busy", "true");
-        try {
-            const result = await submitProject(config.createUrl, new FormData(form), config.csrfToken);
-            modal.hidePopover();
-            form.reset();
-            showToast("Project saved", result.message, "success");
-            searchAfterTyping.cancel();
-            await refreshProjects();
-        } catch (error) {
-            displayErrors(error);
-            showToast("Could not save project", error.message, "error", 6000);
-        } finally {
-            submit.disabled = false;
-            submit.textContent = "Save project";
-            form.removeAttribute("aria-busy");
-        }
-    });
-}
+bindAjaxForm({
+    form: document.getElementById("project-form"),
+    modal: document.getElementById("add-project-modal"),
+    summary: document.getElementById("project-form-error"),
+    submit: document.getElementById("project-submit"),
+    url: config.createUrl, csrfToken: config.csrfToken,
+    firstField: "title", label: "project", savedTitle: "Project saved", notify: showToast,
+    onSuccess: () => { searchAfterTyping.cancel(); return refreshProjects(); },
+});
 
 loader.load(config.initialQuery);

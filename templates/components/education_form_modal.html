@@ -1,0 +1,19 @@
+<div id="add-education-modal" class="project-form-modal" popover="auto" role="dialog" aria-labelledby="add-education-title" aria-describedby="add-education-description">
+    <header class="project-form-modal-header">
+        <div>
+            <p class="section-kicker">Academic background</p>
+            <h2 id="add-education-title">Add education</h2>
+        </div>
+        <button type="button" class="popover-close" popovertarget="add-education-modal" popovertargetaction="hide" aria-label="Close add-education form">×</button>
+    </header>
+    <p id="add-education-description" class="project-form-description">Add a degree, exchange semester, or programme. Fields marked * are required.</p>
+    <form id="education-form" class="project-form" method="post" action="{% url 'main:create_education' %}">
+        {% csrf_token %}
+        <p id="education-form-error" class="form-error-summary" role="alert" tabindex="-1" hidden></p>
+        {% include "components/form_fields.html" %}
+        <div class="form-actions">
+            <button type="submit" id="education-submit" class="button">Save education</button>
+            <button type="button" class="button button-secondary" popovertarget="add-education-modal" popovertargetaction="hide">Cancel</button>
+        </div>
+    </form>
+</div>

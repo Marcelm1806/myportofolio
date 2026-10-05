@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Education | {{ name }}{% endblock %}
 
@@ -10,19 +11,18 @@
             <h1 id="education-title">Education</h1>
             <p>Degrees, exchange semesters, and the subjects that shaped my interests.</p>
         </header>
-
         {% include "components/education_access.html" %}
-
         {% if can_manage_education %}
             <div class="education-toolbar">
-                <a href="{% url 'main:create_education' %}" class="button">+ Add education</a>
+                <button type="button" class="button" popovertarget="add-education-modal">+ Add education</button>
+                <noscript><a href="{% url 'main:create_education' %}">Open the full-page form</a></noscript>
             </div>
         {% endif %}
 
-        <form method="get" action="{% url 'main:show_education' %}" class="project-search education-search" role="search">
+        <form id="education-search-form" method="get" action="{% url 'main:show_education' %}" class="project-search education-search" role="search">
             <div class="project-search-field">
                 <label for="education-search">Search institution or degree</label>
-                <input type="search" id="education-search" name="q" value="{{ query }}" placeholder="University or programme">
+                <input type="search" id="education-search" name="q" value="{{ query }}" placeholder="University or programme" aria-controls="education-grid">
             </div>
             <div class="education-filter-field">
                 <label for="education-status">Study status</label>
@@ -42,29 +42,35 @@
                 </div>
             {% endif %}
             <button type="submit" class="button">Search</button>
-            {% if query or status_filter or starred_only %}
-                <a href="{% url 'main:show_education' %}" class="button button-secondary">Clear</a>
-            {% endif %}
+            <button type="button" id="clear-education-search" class="button button-secondary"{% if not query and not status_filter and not starred_only %} hidden{% endif %}>Clear</button>
         </form>
-
-        <p class="education-results">{{ education_list|length }} {{ education_list|length|pluralize:"entry,entries" }}</p>
-        <div class="education-grid">
-            {% for education in education_list %}
-                {% include "components/education_card.html" with education=education show_actions=True %}
-            {% empty %}
-                <p class="empty-state">
-                    {% if starred_only and not user.is_authenticated %}
-                        Log in to view your starred entries.
-                    {% elif starred_only %}
-                        No starred education entries match these filters.
-                    {% elif query or status_filter %}
-                        No education entries match these filters.
-                    {% else %}
-                        No education entries have been added yet.
-                    {% endif %}
-                </p>
-            {% endfor %}
+        <noscript><p class="empty-state">Enable JavaScript to load and search education entries.</p></noscript>
+        <p id="education-list-status" class="education-results" role="status" aria-live="polite">Loading education…</p>
+        <div id="education-load-error" class="project-load-error" role="alert" hidden>
+            <p>Education entries could not be loaded. Please try again.</p>
+            <button type="button" id="retry-education" class="button button-secondary">Try again</button>
         </div>
+        <p id="education-empty-state" class="empty-state" hidden>
+            {% if starred_only and not user.is_authenticated %}
+                Log in to view your starred entries.
+            {% elif starred_only %}
+                No starred education entries match these filters.
+            {% elif query or status_filter %}
+                No education entries match these filters.
+            {% else %}
+                No education entries have been added yet.
+            {% endif %}
+        </p>
+        <div id="education-grid" class="education-grid" aria-busy="true"></div>
     </div>
 </section>
+{% endblock %}
+
+{% block overlays %}
+    {% if can_manage_education %}{% include "components/education_form_modal.html" %}{% endif %}
+{% endblock %}
+
+{% block scripts %}
+    {{ education_config|json_script:"education-config" }}
+    <script type="module" src="{% static 'js/education.js' %}?v=assignment5-20260930"></script>
 {% endblock %}

@@ -219,12 +219,12 @@ class AuthorizationAndStarTests(TestCase):
                 self.assertContains(projects, project_add)
                 self.assertTrue(projects.context["project_config"]["isSuperuser"])
                 self.assertContains(education, education_add)
-                self.assertContains(education, f'href="{reverse("main:update_education", args=[self.education.pk])}"')
+                self.assertTrue(education.context["education_config"]["canEdit"])
             else:
                 self.assertNotContains(projects, project_add)
                 self.assertFalse(projects.context["project_config"]["isSuperuser"])
                 self.assertNotContains(education, education_add)
-                self.assertNotContains(education, f'href="{reverse("main:update_education", args=[self.education.pk])}"')
+                self.assertFalse(education.context["education_config"]["canEdit"])
             records = self.client.get(reverse("main:get_projects_json")).json()
             self.assertEqual(records[0]["urls"]["star"], reverse("main:toggle_star", args=[self.project.pk]))
 

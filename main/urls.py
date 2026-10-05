@@ -2,6 +2,7 @@ from django.urls import path
 
 from main.views import (
     create_education,
+    create_education_ajax,
     create_project,
     create_project_ajax,
     delete_education,
@@ -21,6 +22,7 @@ from main.views import (
     show_projects,
     toggle_star,
     toggle_education_star,
+    toggle_education_star_ajax,
     update_education,
 )
 
@@ -36,7 +38,13 @@ urlpatterns = [
     path("api/experience/", get_experience_json, name="get_experience_json"),
     path("education/", show_education, name="show_education"),
     path("education/add/", create_education, name="create_education"),
+    path("education/add-ajax/", create_education_ajax, name="create_education_ajax"),
     path("api/education/", get_education_json, name="get_education_json"),
+    path(
+        "education/<uuid:education_id>/star-ajax/",
+        toggle_education_star_ajax,
+        name="toggle_education_star_ajax",
+    ),
     path(
         "education/<uuid:education_id>/star/",
         toggle_education_star,

@@ -1,0 +1,19 @@
+/* Keep the existing Education cards and shared Tutorial 5 popover/toast design. */
+.education-grid[aria-busy="true"] {
+    opacity: 0.55;
+    pointer-events: none;
+}
+
+.education-results {
+    min-height: 1.5em;
+}
+
+.education-card h2,
+.education-degree,
+.education-description {
+    overflow-wrap: anywhere;
+}
+
+#education-load-error {
+    margin-bottom: 1.5rem;
+}

@@ -61,6 +61,22 @@ class ProjectForm(forms.ModelForm):
 class EducationForm(forms.ModelForm):
     """All editable education fields; Django supplies UUID and timestamps."""
 
+    def clean_institution(self):
+        institution = strip_tags(self.cleaned_data["institution"]).strip()
+        if not institution:
+            raise forms.ValidationError("Enter an institution name, not just HTML tags.")
+        return institution
+
+    def clean_degree(self):
+        degree = strip_tags(self.cleaned_data["degree"]).strip()
+        if not degree:
+            raise forms.ValidationError("Enter a degree or programme, not just HTML tags.")
+        return degree
+
+    def clean_description(self):
+        # Plain text only. Rendering must still escape old/imported values.
+        return strip_tags(self.cleaned_data["description"]).strip()
+
     class Meta:
         model = Education
         fields = [

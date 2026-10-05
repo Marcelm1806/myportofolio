@@ -5,7 +5,6 @@ from urllib.parse import parse_qs, urlsplit
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.core import serializers
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -60,7 +59,10 @@ class EducationPermissionTests(EducationAccounts):
                 with self.subTest(user=user, url=url):
                     response = self.client.get(url)
                     self.assertEqual(response.status_code, 200)
-                    self.assertContains(response, self.entry.institution)
+                    if url == reverse("main:show_education"):
+                        self.assertContains(response, 'id="education-grid"')
+                    else:
+                        self.assertContains(response, self.entry.institution)
 
     def test_direct_write_requests_enforce_the_four_roles(self):
         create = reverse("main:create_education")
@@ -126,9 +128,13 @@ class EducationPermissionTests(EducationAccounts):
                 self.assertContains(response, f'class="education-role">{role}</span>')
                 edit = f'href="{reverse("main:update_education", args=[self.entry.pk])}"'
                 delete = f'action="{reverse("main:delete_education", args=[self.entry.pk])}"'
-                (self.assertContains if user in (self.editor, self.owner) else self.assertNotContains)(response, edit)
-                (self.assertContains if user == self.owner else self.assertNotContains)(response, delete)
-                self.assertContains(response, f'action="{self.star_url()}"')
+                if url == self.detail_url():
+                    (self.assertContains if user in (self.editor, self.owner) else self.assertNotContains)(response, edit)
+                    (self.assertContains if user == self.owner else self.assertNotContains)(response, delete)
+                    self.assertContains(response, f'action="{self.star_url()}"')
+                else:
+                    self.assertEqual(response.context["education_config"]["canEdit"], user in (self.editor, self.owner))
+                    self.assertEqual(response.context["education_config"]["canManage"], user == self.owner)
             listing = self.client.get(reverse("main:show_education"))
             add = f'href="{reverse("main:create_education")}"'
             (self.assertContains if user == self.owner else self.assertNotContains)(listing, add)
@@ -211,10 +217,12 @@ class EducationStarTests(EducationAccounts):
         response = self.client.post(self.star_url(), {"user_id": self.other.pk}, follow=True)
         self.assertContains(response, "Star added: Current University.")
         self.assertEqual(self.entry.starred_by.count(), 2)
-        for url in (reverse("main:show_education"), self.detail_url()):
-            response = self.client.get(url)
-            self.assertContains(response, 'aria-pressed="true"')
-            self.assertContains(response, 'class="star-count">2</span>')
+        response = self.client.get(self.detail_url())
+        self.assertContains(response, 'aria-pressed="true"')
+        self.assertContains(response, 'class="star-count">2</span>')
+        fields = self.client.get(reverse("main:get_education_json")).json()[0]["fields"]
+        self.assertTrue(fields["is_starred"])
+        self.assertEqual(fields["star_count"], 2)
         response = self.client.post(self.star_url(), follow=True)
         self.assertContains(response, "Star removed: Current University.")
         self.assertEqual(list(self.entry.starred_by.all()), [self.other])
@@ -268,7 +276,7 @@ class EducationStarTests(EducationAccounts):
         response = self.client.post(self.star_url(), {"starred": "1"}, follow=True)
         self.assertRedirects(response, reverse("main:show_education") + "?starred=1")
         self.assertContains(response, "No starred education entries match these filters.")
-        self.assertContains(response, "0 entries")
+        self.assertEqual(self.client.get(reverse("main:get_education_json"), {"starred": "1"}).json(), [])
         self.assertContains(response, '<option value="1" selected>My starred entries</option>', html=True)
 
     def test_account_deletion_removes_stars_without_deleting_portfolio_records(self):
@@ -279,11 +287,12 @@ class EducationStarTests(EducationAccounts):
 
 
 class EducationStarDataTests(EducationAccounts):
-    def test_api_preserves_public_fields_and_omits_all_star_account_information(self):
+    def test_api_adds_star_totals_without_exposing_other_accounts(self):
         self.entry.starred_by.add(self.member)
         expected_fields = {
             "institution", "degree", "description", "start_year", "end_year",
             "is_current", "website", "display_order", "created_at", "updated_at",
+            "period_label", "star_count", "is_starred",
         }
         for user in (None, self.member, self.editor, self.owner):
             self.account(user)
@@ -291,13 +300,14 @@ class EducationStarDataTests(EducationAccounts):
             self.assertEqual(response["Content-Type"], "application/json")
             self.assertIn("Cookie", response["Vary"])
             for item in response.json():
-                self.assertEqual(set(item), {"model", "pk", "fields"})
+                self.assertEqual(set(item), {"model", "pk", "fields", "urls"})
                 self.assertEqual(set(item["fields"]), expected_fields)
             self.assertNotContains(response, self.member.username)
             self.assertNotContains(response, self.member.email)
             self.assertNotContains(response, "starred_by")
-            restored = list(serializers.deserialize("json", response.content))
-            self.assertEqual(restored[0].object.period_label, self.entry.period_label)
+            self.assertEqual(response.json()[0]["fields"]["period_label"], self.entry.period_label)
+            self.assertEqual(response.json()[0]["fields"]["is_starred"], user == self.member)
+            self.assertEqual(response.json()[0]["fields"]["star_count"], 1)
 
     def test_personal_star_filter_matches_html_json_and_combines_with_search(self):
         self.entry.starred_by.add(self.member)
@@ -313,7 +323,7 @@ class EducationStarDataTests(EducationAccounts):
             self.account(user)
             html = self.client.get(reverse("main:show_education"), parameters)
             data = self.client.get(reverse("main:get_education_json"), parameters)
-            self.assertEqual([entry.pk for entry in html.context["education_list"]], expected)
+            self.assertEqual(html.context["education_config"]["initialFilters"]["starred"], parameters.get("starred", ""))
             self.assertEqual([entry["pk"] for entry in data.json()], [str(pk) for pk in expected])
 
     def test_detail_uses_shared_layout_escapes_content_and_is_read_only(self):

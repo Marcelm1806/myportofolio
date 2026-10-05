@@ -254,7 +254,7 @@ def _education_filters(request):
 
 
 def _filtered_education(request):
-    entries = Education.objects.all()
+    entries = _education_with_star_state(Education.objects.all(), request.user)
     query, status = _education_filters(request)
     if query:
         entries = entries.filter(
@@ -265,14 +265,14 @@ def _filtered_education(request):
     if request.GET.get("starred") == "1":
         # The filter always belongs to the session account, never a supplied ID.
         entries = (
-            entries.filter(starred_by=request.user)
+            entries.filter(is_starred=True)
             if request.user.is_authenticated else entries.none()
         )
     return entries
 
 
 def _education_json(entries):
-    """Keep Assignment 3's public contract; star membership stays private."""
+    """Retain the serializer exercise for the server-rendered home overview."""
     return HttpResponse(
         serializers.serialize("json", entries, fields=(
             "institution", "degree", "description", "start_year", "end_year",
@@ -285,15 +285,34 @@ def _education_json(entries):
 @require_safe
 @vary_on_cookie
 def get_education_json(request):
-    return _education_json(_filtered_education(request))
+    # Explicit allowlist: totals and the caller's boolean, never stargazer IDs.
+    records = []
+    for entry in _filtered_education(request):
+        fields = {
+            name: getattr(entry, name) for name in (
+                "institution", "degree", "description", "start_year", "end_year",
+                "is_current", "website", "display_order", "created_at", "updated_at",
+            )
+        }
+        fields.update({
+            "period_label": entry.period_label,
+            "star_count": entry.star_count,
+            "is_starred": entry.is_starred,
+        })
+        records.append({
+            "model": "main.education", "pk": str(entry.pk), "fields": fields,
+            "urls": {
+                "detail": reverse("main:show_education_detail", args=[entry.pk]),
+                "edit": reverse("main:update_education", args=[entry.pk]),
+                "delete": reverse("main:delete_education", args=[entry.pk]),
+                "star": reverse("main:toggle_education_star_ajax", args=[entry.pk]),
+            },
+        })
+    return JsonResponse(records, safe=False)
 
 
-def _attach_education_star_state(entries, user):
-    """One aggregate query enriches JSON-derived objects without N+1 lookups.
-
-    Only a count and the current account's boolean reach the template. The
-    public serializer intentionally omits all user IDs and account details.
-    """
+def _education_with_star_state(entries, user):
+    """Aggregate in one query; Exists keeps personal filtering independent of totals."""
     membership = Education.starred_by.through.objects.filter(
         education_id=OuterRef("pk"), user_id=user.pk,
     )
@@ -301,10 +320,18 @@ def _attach_education_star_state(entries, user):
         Exists(membership) if user.is_authenticated
         else Value(False, output_field=BooleanField())
     )
+    return entries.annotate(
+        star_count=Count("starred_by", distinct=True), is_starred=own_star,
+    ).order_by(*Education._meta.ordering)
+
+
+def _attach_education_star_state(entries, user):
+    """Share the same computed state with the server-rendered detail page."""
     state = {
         row["pk"]: row
-        for row in Education.objects.filter(pk__in=[entry.pk for entry in entries])
-        .annotate(star_count=Count("starred_by"), is_starred=own_star)
+        for row in _education_with_star_state(
+            Education.objects.filter(pk__in=[entry.pk for entry in entries]), user,
+        )
         .values("pk", "star_count", "is_starred")
     }
     for entry in entries:
@@ -315,17 +342,29 @@ def _attach_education_star_state(entries, user):
 
 @require_safe
 def show_education(request):
-    # Call the JSON view directly, following Tutorial 3, without an HTTP loop.
-    entries = _objects_from_json(get_education_json(request))
-    _attach_education_star_state(entries, request.user)
+    # Only a page skeleton; the browser requests records from the JSON endpoint.
     query, status = _education_filters(request)
+    access = education_access_context(request.user)
     context = {
         "name": PROFILE["name"],
-        "education_list": entries,
+        "form": EducationForm(),
         "query": query,
         "status_filter": status,
         "starred_only": request.GET.get("starred") == "1",
-        **education_access_context(request.user),
+        **access,
+        "education_config": {
+            "jsonUrl": reverse("main:get_education_json"),
+            "createUrl": reverse("main:create_education_ajax"),
+            "loginUrl": reverse("main:login"),
+            "csrfToken": get_token(request),
+            "isAuthenticated": request.user.is_authenticated,
+            "canManage": access["can_manage_education"],
+            "canEdit": access["can_edit_education"],
+            "initialFilters": {
+                "q": query, "status": status,
+                "starred": "1" if request.GET.get("starred") == "1" else "",
+            },
+        },
     }
     return render(request, "education.html", context)
 
@@ -338,6 +377,41 @@ def show_education_detail(request, education_id):
         "name": PROFILE["name"],
         "education": entry,
         **education_access_context(request.user),
+    })
+
+
+@require_POST
+def create_education_ajax(request):
+    """Owner-only AJAX creation; invalid data never reaches save()."""
+    if not can_manage_education(request.user):
+        return JsonResponse({"message": "Only the owner can add education entries."}, status=403)
+    form = EducationForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+    entry = form.save()
+    return JsonResponse({
+        "pk": str(entry.pk), "message": "Education entry added successfully.",
+    }, status=201)
+
+
+@require_POST
+def toggle_education_star_ajax(request, education_id):
+    """Extra interaction: update a personal star without leaving the list."""
+    if not request.user.is_authenticated:
+        return JsonResponse({"message": "Please log in to star an education entry."}, status=403)
+    entry = Education.objects.filter(pk=education_id).first()
+    if entry is None:
+        return JsonResponse({"message": "This education entry no longer exists."}, status=404)
+    if entry.starred_by.filter(pk=request.user.pk).exists():
+        entry.starred_by.remove(request.user)
+        starred = False
+    else:
+        entry.starred_by.add(request.user)
+        starred = True
+    return JsonResponse({
+        "pk": str(entry.pk), "is_starred": starred,
+        "star_count": entry.starred_by.count(),
+        "message": "Star added." if starred else "Star removed.",
     })
 
 

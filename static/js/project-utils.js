@@ -1,16 +1,7 @@
-/** Escape every dynamic value before inserting a card as HTML. */
-export function escapeHtml(value) {
-    const replacements = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
-    return String(value ?? "").replace(/[&<>"']/g, character => replacements[character]);
-}
+import { escapeHtml, localUrl, debounce, createListLoader, postForm, AjaxError } from "./ajax.js?v=assignment5-20260930";
 
-function localUrl(value) {
-    // HTML escaping alone does not make a javascript: URL safe.
-    if (typeof value !== "string" || !/^\/(?!\/)[^\\\s]*$/.test(value)) {
-        throw new Error("Invalid project link.");
-    }
-    return escapeHtml(value);
-}
+// Preserve the Tutorial 5 imports while sharing these helpers with Education.
+export { escapeHtml, debounce, AjaxError as ProjectSubmissionError };
 
 export function renderProjectCard(project, config) {
     const { fields, urls, pk } = project;
@@ -54,81 +45,13 @@ export function renderProjectCard(project, config) {
     </article>`;
 }
 
-export function debounce(callback, delay = 300, timers = globalThis) {
-    let timer;
-    const debounced = (...args) => {
-        timers.clearTimeout(timer);
-        timer = timers.setTimeout(() => callback(...args), delay);
-    };
-    debounced.cancel = () => timers.clearTimeout(timer);
-    return debounced;
+export function createProjectLoader({ onState, ...options }) {
+    const loader = createListLoader({ ...options,
+        onState: ({ state, filters, records }) => onState({ state, query: filters.title || "", projects: records }),
+    });
+    return { cancel: loader.cancel, load: (query = "") => loader.load({ title: query.trim() }) };
 }
 
-/** Ignore stale responses even if cancellation arrives after fetch resolved. */
-export function createProjectLoader({ url, baseUrl, onState, fetchImpl = globalThis.fetch }) {
-    let controller;
-    let generation = 0;
-    function cancel() {
-        generation += 1;
-        controller?.abort();
-    }
-    async function load(value = "") {
-        cancel();
-        const current = generation;
-        const query = value.trim();
-        controller = new AbortController();
-        const endpoint = new URL(url, baseUrl);
-        if (query) endpoint.searchParams.set("title", query);
-        else endpoint.searchParams.delete("title");
-        onState({ state: "loading", query });
-        try {
-            const response = await fetchImpl(endpoint, {
-                signal: controller.signal, credentials: "same-origin", cache: "no-store",
-                headers: { Accept: "application/json" },
-            });
-            if (!response.ok) throw new Error("Projects could not be loaded.");
-            const projects = await response.json();
-            if (!Array.isArray(projects)) throw new Error("Invalid project response.");
-            if (current === generation) onState({ state: "ready", query, projects });
-        } catch (error) {
-            if (current === generation && error.name !== "AbortError") {
-                onState({ state: "error", query });
-            }
-        }
-    }
-    return { load, cancel };
-}
-
-export class ProjectSubmissionError extends Error {
-    constructor(message, errors = {}) {
-        super(message);
-        this.errors = errors;
-    }
-}
-
-export async function submitProject(url, data, csrfToken, fetchImpl = globalThis.fetch) {
-    let response;
-    try {
-        response = await fetchImpl(url, {
-            method: "POST", body: data, credentials: "same-origin",
-            headers: { "X-CSRFToken": csrfToken, Accept: "application/json" },
-        });
-    } catch {
-        throw new ProjectSubmissionError("Connection lost. Check the project list before retrying; the save may have reached the server.");
-    }
-    const body = await response.json().catch(() => null);
-    if (!response.ok) {
-        const fallback = response.status === 403
-            ? "Your session or permission has changed. Reload the page and sign in as the owner."
-            : "The project could not be saved. Please try again.";
-        const firstError = Object.values(body?.errors || {}).flat()[0]?.message || "";
-        throw new ProjectSubmissionError(body?.errors
-            ? `Please correct the highlighted fields. ${firstError}`.trim()
-            : body?.message || fallback, body?.errors);
-    }
-    // A login redirect can produce HTML with status 200; it is not a save.
-    if (response.status !== 201 || !body?.pk) {
-        throw new ProjectSubmissionError("Unexpected response. Reload the project list before trying again.");
-    }
-    return body;
+export function submitProject(url, data, csrfToken, fetchImpl = globalThis.fetch) {
+    return postForm(url, data, csrfToken, { fetchImpl, label: "project" });
 }

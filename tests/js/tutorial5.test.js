@@ -73,7 +73,7 @@ test("dangerous link schemes, external URLs and malformed IDs are rejected", () 
     for (const url of ["javascript:alert(1)", "https://example.com", "//example.com", "/\\example.com"]) {
         const data = record();
         data.urls.detail = url;
-        assert.throws(() => renderProjectCard(data, {}), /Invalid project link/);
+        assert.throws(() => renderProjectCard(data, {}), /Invalid local link/);
     }
     assert.throws(() => renderProjectCard({ ...record(), pk: '\"><img src=x>' }, {}), /Invalid project ID/);
 });

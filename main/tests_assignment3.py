@@ -5,9 +5,7 @@ import uuid
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.core import serializers
 from django.core.management import call_command
-from django.http import HttpResponse
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -240,26 +238,19 @@ class EducationDataTests(TestCase):
         self.assertIsNone(records[0]["fields"]["end_year"])
         self.assertIn("created_at", records[0]["fields"])
         self.assertIn("updated_at", records[0]["fields"])
-        objects = [item.object for item in serializers.deserialize("json", response.content)]
-        self.assertEqual(objects[0].period_label, "2024–Present")
-        self.assertEqual(objects[1].period_label, "2020–2023")
+        self.assertEqual(records[0]["fields"]["period_label"], "2024–Present")
+        self.assertEqual(records[1]["fields"]["period_label"], "2020–2023")
 
-    def test_page_renders_deserialized_json_instead_of_a_separate_queryset(self):
-        # A JSON-only record makes bypassing the required flow observable.
-        json_only = Education(
-            institution="JSON-only Institute", degree="Certificate",
-            start_year=2022, end_year=2022,
-        )
-        response_data = HttpResponse(
-            serializers.serialize("json", [json_only]), content_type="application/json",
-        )
-        with patch("main.views.get_education_json", return_value=response_data) as endpoint:
-            response = self.client.get(reverse("main:show_education"))
-        endpoint.assert_called_once()
-        self.assertContains(response, "JSON-only Institute")
+    def test_page_renders_a_shell_without_loading_the_json_server_side(self):
+        # Assignment 5 replaces the earlier server-side serializer round trip.
+        with patch("main.views.get_education_json") as endpoint:
+            with self.assertNumQueries(0):
+                response = self.client.get(reverse("main:show_education"))
+        endpoint.assert_not_called()
+        self.assertContains(response, 'id="education-grid"')
+        self.assertContains(response, "js/education.js")
         self.assertNotContains(response, self.current.institution)
-        self.assertEqual(response.context["education_list"][0].period_label, "2022")
-        self.assertFalse(Education.objects.filter(pk=json_only.pk).exists())
+        self.assertNotIn("education_list", response.context)
 
     def test_search_and_status_filters_match_in_html_and_json(self):
         cases = [
@@ -275,7 +266,7 @@ class EducationDataTests(TestCase):
             with self.subTest(query=query):
                 html = self.client.get(reverse("main:show_education"), query)
                 data = self.client.get(reverse("main:get_education_json"), query).json()
-                self.assertEqual([e.pk for e in html.context["education_list"]], [e.pk for e in entries])
+                self.assertEqual(html.context["education_config"]["initialFilters"]["q"], query.get("q", "").strip())
                 self.assertEqual([e["pk"] for e in data], [str(e.pk) for e in entries])
         self.assertEqual(Education.objects.count(), 2)
 
@@ -304,7 +295,7 @@ class EducationDataTests(TestCase):
         self.current.institution = '<script>alert("test")</script>'
         self.current.description = '<img src=x onerror="alert(1)">'
         self.current.save()
-        response = self.client.get(reverse("main:show_education"))
+        response = self.client.get(reverse("main:show_education_detail", args=[self.current.pk]))
         self.assertNotContains(response, self.current.institution)
         self.assertContains(response, "&lt;script&gt;")
         self.assertNotContains(response, '<img src=x')
