@@ -1,4 +1,4 @@
-import { escapeHtml, localUrl } from "./ajax.js?v=assignment5-20260930";
+import { escapeHtml, localUrl } from "./ajax.js?v=tutorial7-20261104";
 
 export function normalizeEducationFilters(values = {}) {
     return {
@@ -25,15 +25,15 @@ function websiteLink(value) {
 }
 
 export function renderEducationCard(entry, config) {
-    const { pk, fields, urls } = entry;
+    const fields = entry;
+    const { id: pk, urls } = entry;
     if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(pk)) throw new Error("Invalid education ID.");
     const institution = escapeHtml(fields.institution);
     const count = Number.isInteger(fields.star_count) && fields.star_count >= 0 ? fields.star_count : 0;
     const starred = fields.is_starred === true;
     const website = websiteLink(fields.website);
-    const csrf = `<input type="hidden" name="csrfmiddlewaretoken" value="${escapeHtml(config.csrfToken)}">`;
     const star = config.isAuthenticated
-        ? `<button type="button" class="button button-star${starred ? " is-starred" : ""}" data-education-star="${pk}" data-url="${localUrl(urls.star)}" aria-pressed="${starred}" aria-label="${starred ? "Unstar" : "Star"} ${institution} (${count} stars)"><span aria-hidden="true">${starred ? "★" : "☆"}</span>${starred ? "Unstar" : "Star"}<span class="star-count">${count}</span></button>`
+        ? `<button type="button" class="button button-star${starred ? " is-starred" : ""}" data-rest-action="star" data-rest-id="${pk}" data-url="${localUrl(urls.star)}" aria-pressed="${starred}" aria-label="${starred ? "Unstar" : "Star"} ${institution} (${count} stars)"><span aria-hidden="true">${starred ? "★" : "☆"}</span>${starred ? "Unstar" : "Star"}<span class="star-count">${count}</span></button>`
         : `<a href="${localUrl(config.loginUrl)}" class="button button-star" aria-label="Log in to star ${institution}"><span aria-hidden="true">☆</span>Log in to star<span class="star-count">${count}</span></a>`;
     const edit = config.canEdit ? `<a href="${localUrl(urls.edit)}" class="button button-secondary" aria-label="Edit education: ${institution}">Edit</a>` : "";
     const remove = config.canManage ? `
@@ -43,7 +43,7 @@ export function renderEducationCard(entry, config) {
             <p id="delete-description-${pk}">This will permanently remove <strong>${institution}</strong> from your portfolio.</p>
             <div class="project-delete-modal-actions">
                 <button type="button" class="button button-secondary" popovertarget="delete-education-${pk}" popovertargetaction="hide" autofocus>Cancel</button>
-                <form method="post" action="${localUrl(urls.delete)}">${csrf}<button type="submit" class="button button-danger">Delete education</button></form>
+                <button type="button" class="button button-danger" data-rest-action="delete" data-rest-id="${pk}" data-url="${localUrl(urls.api_detail)}">Delete education</button>
             </div>
         </div>` : "";
     return `<article class="education-card" data-education-id="${pk}">

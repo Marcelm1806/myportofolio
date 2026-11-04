@@ -5,10 +5,10 @@ import { createToast } from "../../static/js/toast.js";
 
 const pk = "65f44391-a5c3-4eaa-a97a-b19dcc4c6937";
 const record = () => ({
-    pk, urls: { detail: `/projects/${pk}/`, star: `/projects/${pk}/star/`, delete: `/projects/${pk}/delete/` },
-    fields: { title: "My project", organization: "University", summary: "Summary", contribution: "First\nSecond",
+    id: pk, urls: { detail: `/projects/${pk}/`, star: `/api/v1/projects/${pk}/star/`, api_detail: `/api/v1/projects/${pk}/` },
+    title: "My project", organization: "University", summary: "Summary", contribution: "First\nSecond",
         technology_list: ["Python", "SQL"], star_count: 2, is_starred: true,
-        starred_by_names: "one, two", is_featured: true, award: "Data Insight" },
+        starred_by_names: "one, two", is_featured: true, award: "Data Insight",
 });
 const response = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 const deferred = () => {
@@ -32,8 +32,8 @@ test("escapes all HTML special characters including attribute quotes", () => {
     assert.equal(escapeHtml(null), "");
 });
 
-test("cards keep portfolio styling, detail links, line breaks and POST controls", () => {
-    const html = renderProjectCard(record(), { isSuperuser: true, csrfToken: "csrf-token" });
+test("cards keep portfolio styling, detail links, line breaks and REST controls", () => {
+    const html = renderProjectCard(record(), { isSuperuser: true, isAuthenticated: true, csrfToken: "csrf-token" });
     assert.match(html, /project-card-featured/);
     assert.match(html, /First<br>Second/);
     assert.match(html, /<li>Python<\/li><li>SQL<\/li>/);
@@ -41,31 +41,31 @@ test("cards keep portfolio styling, detail links, line breaks and POST controls"
     assert.match(html, /Unstar/);
     assert.match(html, /class="star-count">2<\/span>/);
     assert.match(html, new RegExp(`href="/projects/${pk}/"`));
-    assert.equal((html.match(/method="post"/g) || []).length, 2);
-    assert.equal((html.match(/name="csrfmiddlewaretoken"/g) || []).length, 2);
+    assert.match(html, /data-rest-action="delete"/);
+    assert.match(html, /data-rest-action="star"/);
     assert.match(html, /popover="auto"/);
 });
 
 test("ordinary visitors get no delete controls; unstarred state is explicit", () => {
     const data = record();
-    data.fields.is_starred = false;
-    const html = renderProjectCard(data, { isSuperuser: false, csrfToken: "token" });
+    data.is_starred = false;
+    const html = renderProjectCard(data, { isSuperuser: false, isAuthenticated: true, csrfToken: "token" });
     assert.doesNotMatch(html, /delete-project|button-danger|Unstar/);
     assert.match(html, /aria-pressed="false"/);
-    assert.match(html, /method="post"/);
+    assert.match(html, /data-rest-action="star"/);
 });
 
 test("stored XSS text is escaped in every card field and username hint", () => {
     const data = record();
     const payload = `"><img src=x onerror='alert(1)'><script>alert(2)</script>&`;
     for (const name of ["title", "organization", "summary", "context_label", "contribution", "award", "starred_by_names"]) {
-        data.fields[name] = payload;
+        data[name] = payload;
     }
-    data.fields.technology_list = [payload];
-    const html = renderProjectCard(data, { isSuperuser: true, csrfToken: '"<token>' });
+    data.technology_list = [payload];
+    const html = renderProjectCard(data, { isSuperuser: true, isAuthenticated: true, csrfToken: '"<token>' });
     assert.doesNotMatch(html, /<img|<script|src=x onerror='/);
     assert.match(html, /&lt;img/);
-    assert.match(html, /&quot;&lt;token&gt;/);
+    assert.doesNotMatch(html, /<token>/);
     assert.match(html, /&#39;alert\(1\)&#39;/);
 });
 
@@ -75,7 +75,7 @@ test("dangerous link schemes, external URLs and malformed IDs are rejected", () 
         data.urls.detail = url;
         assert.throws(() => renderProjectCard(data, {}), /Invalid local link/);
     }
-    assert.throws(() => renderProjectCard({ ...record(), pk: '\"><img src=x>' }, {}), /Invalid project ID/);
+    assert.throws(() => renderProjectCard({ ...record(), id: '\"><img src=x>' }, {}), /Invalid project ID/);
 });
 
 test("debounce sends only the latest input and can cancel pending Enter duplicates", () => {
@@ -101,7 +101,7 @@ test("loader trims and encodes query and uses a fresh same-origin JSON request",
     assert.equal(calls[0].url.searchParams.get("title"), "Data & AI");
     assert.equal(calls[0].options.credentials, "same-origin");
     assert.equal(calls[0].options.cache, "no-store");
-    assert.equal(states.at(-1).projects[0].pk, pk);
+    assert.equal(states.at(-1).projects[0].id, pk);
     await loader.load("   ");
     assert.equal(calls[1].url.searchParams.has("title"), false);
 });

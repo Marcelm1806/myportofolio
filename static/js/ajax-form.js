@@ -1,4 +1,4 @@
-import { postForm } from "./ajax.js?v=assignment5-20260930";
+import { postForm } from "./ajax.js?v=tutorial7-20261104";
 
 /** No role-specific elements are accessed until the authorized form exists. */
 export function bindAjaxForm({ form, modal, summary, submit, url, csrfToken,

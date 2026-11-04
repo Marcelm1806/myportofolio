@@ -5,18 +5,18 @@ import { createListLoader, postForm, AjaxError } from "../../static/js/ajax.js";
 import { bindAjaxForm } from "../../static/js/ajax-form.js";
 
 const pk = "65f44391-a5c3-4eaa-a97a-b19dcc4c6937";
-const entry = () => ({ pk, fields: {
+const entry = () => ({ id: pk,
     institution: "Example University", degree: "M.Sc. Data Science", description: "First\nSecond",
     period_label: "2024–Present", is_current: true, website: "https://example.edu/?a=1&b=2",
     star_count: 3, is_starred: true,
-}, urls: { detail: `/education/${pk}/`, edit: `/education/${pk}/edit/`, delete: `/education/${pk}/delete/`, star: `/education/${pk}/star-ajax/` } });
+urls: { detail: `/education/${pk}/`, edit: `/education/${pk}/edit/`, api_detail: `/api/v1/education/${pk}/`, star: `/api/v1/education/${pk}/star/` } });
 const config = { loginUrl: "/login/", csrfToken: "csrf", isAuthenticated: true, canEdit: true, canManage: true };
 const response = (body, status = 200) => ({ ok: status >= 200 && status < 300, status, json: async () => body });
 const deferred = () => { let resolve; const promise = new Promise(done => { resolve = done; }); return { promise, resolve }; };
 
 test("Education retains card styling, period, multiline descriptions and protected actions", () => {
     const html = renderEducationCard(entry(), config);
-    for (const fragment of ['class="education-card"', "2024–Present", "First<br>Second", 'aria-pressed="true"', 'class="star-count">3</span>', 'popover="auto"', 'method="post"', 'name="csrfmiddlewaretoken"']) {
+    for (const fragment of ['class="education-card"', "2024–Present", "First<br>Second", 'aria-pressed="true"', 'class="star-count">3</span>', 'popover="auto"', 'data-rest-action="delete"', 'data-rest-action="star"']) {
         assert.ok(html.includes(fragment), fragment);
     }
     assert.match(html, /rel="noopener noreferrer"/);
@@ -26,7 +26,7 @@ test("Education retains card styling, period, multiline descriptions and protect
 test("every role gets the right client controls; guests need no missing form element", () => {
     for (const [auth, edit, manage] of [[false, false, false], [true, false, false], [true, true, false], [true, true, true]]) {
         const html = renderEducationCard(entry(), { ...config, isAuthenticated: auth, canEdit: edit, canManage: manage });
-        assert.equal(html.includes("data-education-star="), auth);
+        assert.equal(html.includes('data-rest-action="star"'), auth);
         assert.equal(html.includes("Edit education:"), edit);
         assert.equal(html.includes("Delete education:"), manage);
         if (!auth) assert.match(html, /href="\/login\/"/);
@@ -37,7 +37,7 @@ test("every role gets the right client controls; guests need no missing form ele
 test("all card text and attribute values escape stored XSS payloads", () => {
     const data = entry();
     const payload = `"><img src=x onerror='alert(1)'><script>alert(2)</script>&`;
-    for (const name of ["institution", "degree", "description", "period_label"]) data.fields[name] = payload;
+    for (const name of ["institution", "degree", "description", "period_label"]) data[name] = payload;
     const html = renderEducationCard(data, config);
     assert.doesNotMatch(html, /<img|<script|onerror='alert/);
     assert.match(html, /&lt;img/);
@@ -48,11 +48,11 @@ test("all card text and attribute values escape stored XSS payloads", () => {
 test("unsafe stored website schemes are omitted, including entity and whitespace tricks", () => {
     for (const website of ["javascript:alert(1)", "java\tscript:alert(1)", "data:text/html,<script>alert(1)</script>", "&#106;avascript:alert(1)", "//evil.example", "ftp://example.edu/"]) {
         const data = entry();
-        data.fields.website = website;
+        data.website = website;
         assert.doesNotMatch(renderEducationCard(data, config), /Institution website/);
     }
     for (const website of ["http://example.edu/", "https://example.edu/"]) {
-        const data = entry(); data.fields.website = website;
+        const data = entry(); data.website = website;
         assert.match(renderEducationCard(data, config), /Institution website/);
     }
     const data = entry(); data.urls.detail = "javascript:alert(1)";

@@ -1,6 +1,7 @@
-import { createListLoader, debounce, postForm } from "./ajax.js?v=assignment5-20260930";
-import { bindAjaxForm } from "./ajax-form.js?v=assignment5-20260930";
-import { normalizeEducationFilters, educationEmptyMessage, renderEducationCard } from "./education-utils.js?v=assignment5-20260930";
+import { submitRestForm, bindRestCardActions } from "./rest.js?v=tutorial7-20261104";
+import { createListLoader, debounce } from "./ajax.js?v=tutorial7-20261104";
+import { bindAjaxForm } from "./ajax-form.js?v=tutorial7-20261104";
+import { normalizeEducationFilters, educationEmptyMessage, renderEducationCard } from "./education-utils.js?v=tutorial7-20261104";
 import { showToast } from "./toast.js?v=tutorial5-20260930";
 
 const config = JSON.parse(document.getElementById("education-config").textContent);
@@ -14,8 +15,6 @@ const statusSelect = document.getElementById("education-status");
 const starSelect = document.getElementById("education-star-filter");
 const clearButton = document.getElementById("clear-education-search");
 let guestStarFilter = config.initialFilters.starred;
-let focusAfterRefresh = null;
-const pendingStars = new Set();
 
 function currentFilters() {
     return normalizeEducationFilters({
@@ -40,21 +39,10 @@ const loader = createListLoader({
             showToast("Could not load education", "Check your connection and use Try again.", "error", 6000);
         } else {
             grid.innerHTML = records.map(entry => renderEducationCard(entry, config)).join("");
-            for (const button of grid.querySelectorAll("[data-education-star]")) {
-                button.disabled = pendingStars.has(button.dataset.educationStar);
-            }
+            cardActions.syncPending();
             empty.textContent = educationEmptyMessage(filters, config.isAuthenticated);
             empty.hidden = records.length !== 0;
             status.textContent = `${records.length} ${records.length === 1 ? "entry" : "entries"}`;
-        }
-        // Restore keyboard focus after replacing the card, but never steal it
-        // from someone who moved on to the search or another control meanwhile.
-        if (state !== "loading" && focusAfterRefresh) {
-            if (document.activeElement === document.body || grid.contains(document.activeElement)) {
-                const target = grid.querySelector(`[data-education-star="${focusAfterRefresh}"]`);
-                (target || searchInput).focus();
-            }
-            focusAfterRefresh = null;
         }
     },
 });
@@ -94,30 +82,12 @@ window.addEventListener("popstate", () => {
     searchNow();
 });
 
-grid.addEventListener("click", async event => {
-    const button = event.target.closest("[data-education-star]");
-    if (!button || !grid.contains(button)) return;
-    const id = button.dataset.educationStar;
-    if (pendingStars.has(id)) return;
-    pendingStars.add(id);
-    button.disabled = true;
-    try {
-        const result = await postForm(button.dataset.url, new FormData(), config.csrfToken, { successStatus: 200, label: "star" });
-        pendingStars.delete(id);
-        if (document.activeElement === button) focusAfterRefresh = id;
-        showToast("Education favourites", result.message, "success");
-        await searchNow();
-    } catch (error) {
-        showToast("Could not update star", error.message, "error", 6000);
-    } finally {
-        pendingStars.delete(id);
-        button.disabled = false;
-        const currentButton = grid.querySelector(`[data-education-star="${id}"]`);
-        if (currentButton) currentButton.disabled = false;
-    }
+const cardActions = bindRestCardActions({
+    grid, csrfToken: config.csrfToken, refresh: searchNow, notify: showToast, fallbackFocus: searchInput,
 });
 
 bindAjaxForm({
+    send: submitRestForm,
     form: document.getElementById("education-form"),
     modal: document.getElementById("add-education-modal"),
     summary: document.getElementById("education-form-error"),

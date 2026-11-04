@@ -173,8 +173,10 @@ def show_projects(request):
         "title_query": title_query,
         "form": ProjectForm(),
         "project_config": {
-            "jsonUrl": reverse("main:get_projects_json"),
-            "createUrl": reverse("main:create_project_ajax"),
+            "jsonUrl": reverse("api:project_list"),
+            "createUrl": reverse("api:project_list"),
+            "loginUrl": reverse("main:login"),
+            "isAuthenticated": request.user.is_authenticated,
             "csrfToken": get_token(request),
             "isSuperuser": request.user.is_superuser,
             "initialQuery": title_query,
@@ -353,8 +355,8 @@ def show_education(request):
         "starred_only": request.GET.get("starred") == "1",
         **access,
         "education_config": {
-            "jsonUrl": reverse("main:get_education_json"),
-            "createUrl": reverse("main:create_education_ajax"),
+            "jsonUrl": reverse("api:education_list"),
+            "createUrl": reverse("api:education_list"),
             "loginUrl": reverse("main:login"),
             "csrfToken": get_token(request),
             "isAuthenticated": request.user.is_authenticated,

@@ -1,5 +1,7 @@
 """Education access rules shared by the views and their visible controls."""
 
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+
 
 def can_manage_education(user):
     """Only the active portfolio owner may create or delete records."""
@@ -31,3 +33,21 @@ def education_access_context(user):
         "can_edit_education": can_edit,
         "education_role": role,
     }
+
+
+class IsPortfolioOwnerOrReadOnly(BasePermission):
+    """Public reads; project mutations belong to the active superuser."""
+
+    def has_permission(self, request, view):
+        return request.method in SAFE_METHODS or can_manage_education(request.user)
+
+
+class IsPortfolioOwnerOrEditorOrReadOnly(BasePermission):
+    """Education Editors may update, but never create or delete."""
+
+    def has_permission(self, request, view):
+        return (
+            request.method in SAFE_METHODS
+            or can_manage_education(request.user)
+            or (request.method in ("PUT", "PATCH") and can_edit_education(request.user))
+        )

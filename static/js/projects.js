@@ -1,6 +1,7 @@
-import { bindAjaxForm } from "./ajax-form.js?v=assignment5-20260930";
+import { submitRestForm, bindRestCardActions } from "./rest.js?v=tutorial7-20261104";
+import { bindAjaxForm } from "./ajax-form.js?v=tutorial7-20261104";
 import { showToast } from "./toast.js?v=tutorial5-20260930";
-import { createProjectLoader, debounce, renderProjectCard } from "./project-utils.js?v=assignment5-20260930";
+import { createProjectLoader, debounce, renderProjectCard } from "./project-utils.js?v=tutorial7-20261104";
 
 const config = JSON.parse(document.getElementById("project-config").textContent);
 const grid = document.getElementById("project-grid");
@@ -28,6 +29,7 @@ const loader = createProjectLoader({
         } else {
             // renderProjectCard escapes all dynamic text and validates URLs.
             grid.innerHTML = projects.map(project => renderProjectCard(project, config)).join("");
+            cardActions.syncPending();
             empty.textContent = query ? "No projects match your search." : "No projects have been added yet.";
             empty.hidden = projects.length !== 0;
             status.textContent = `${projects.length} project${projects.length === 1 ? "" : "s"}${query ? " found" : ""}.`;
@@ -69,7 +71,13 @@ window.addEventListener("popstate", () => {
     refreshProjects();
 });
 
+const cardActions = bindRestCardActions({
+    grid, csrfToken: config.csrfToken, notify: showToast, fallbackFocus: searchInput,
+    refresh: () => { searchAfterTyping.cancel(); return refreshProjects(); },
+});
+
 bindAjaxForm({
+    send: submitRestForm,
     form: document.getElementById("project-form"),
     modal: document.getElementById("add-project-modal"),
     summary: document.getElementById("project-form-error"),

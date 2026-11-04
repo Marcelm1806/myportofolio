@@ -2,7 +2,7 @@
 
 A responsive personal portfolio developed for Platform-Based Programming at the Faculty of Computer Science, Universitas Indonesia.
 
-The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation. Assignment 3 adds database-backed education with create/update forms, deletion, filtering, and JSON delivery, and also exposes experience as JSON. Tutorial 4 adds registration, login/logout, session and cookie handling, owner-only changes, and project stars. Assignment 4 extends Education with an Editor role, personal stars, a favourites filter, and public detail pages. Tutorial 5 loads and searches projects with JavaScript, adds projects through an AJAX popover form, and provides reusable toast notifications. Assignment 5 applies those patterns to Education and adds AJAX stars while preserving the existing roles and portfolio design.
+The project started as a static About Me page. Tutorial 2 introduced database-backed experience entries; Assignment 2 added a project overview, individual project pages, and reusable page templates. Tutorial 3 adds project creation, title search, JSON/XML data delivery, and deletion with confirmation. Assignment 3 adds database-backed education with create/update forms, deletion, filtering, and JSON delivery, and also exposes experience as JSON. Tutorial 4 adds registration, login/logout, session and cookie handling, owner-only changes, and project stars. Assignment 4 extends Education with an Editor role, personal stars, a favourites filter, and public detail pages. Tutorial 5 loads and searches projects with JavaScript, adds projects through an AJAX popover form, and provides reusable toast notifications. Assignment 5 applies those patterns to Education and adds AJAX stars while preserving the existing roles and portfolio design. Tutorial 7 adds a Django REST Framework API for Projects and Education and switches their browser lists, creation, stars, and deletion to the versioned API.
 
 [Assignment 1 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-1.html) · [Assignment 2 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-2.html) · [Assignment 3 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-3.html) · [Assignment 4 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-4.html) · [Assignment 5 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-5.html)
 
@@ -27,7 +27,7 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 - Versioned fixtures for loading three projects, one experience entry, and three education entries
 - A model-based project form with validation, CSRF protection, and success messages
 - Project title search and JSON/XML endpoints with the same filter
-- A native popover for confirming deletion through a CSRF-protected POST
+- Native deletion confirmation: REST DELETE on the AJAX lists; the original CSRF-protected POST routes remain available
 - Education validation for study periods, required fields, website URLs, and display order
 - Project and Education cards loaded from JSON with `fetch()`; the home overview and Experience retain their server-side rendering
 - Live Project and Education search with a 300 ms debounce, request cancellation, loading/error states, and retry
@@ -41,7 +41,8 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 - Public education detail pages and consistent permission-aware controls
 - Education JSON includes public fields, aggregate star counts, and the current account's star state without exposing other accounts or their memberships
 - Project stars for signed-in accounts, with counts, usernames, and an unstar action
-- 119 Django tests and 23 JavaScript tests covering the portfolio, forms, permissions, AJAX, and security boundaries (execution status below)
+- Versioned DRF CRUD and star endpoints, session authentication, explicit permissions, and a browsable API
+- 139 Django tests and 33 JavaScript tests covering the portfolio, forms, REST/AJAX, permissions, and security boundaries (execution status below)
 
 The frontend uses HTML5, CSS3, vanilla JavaScript modules, and Django Template Language. It uses CSS Grid, Flexbox, CSS variables, and `clamp()`; no frontend framework or JavaScript library is required.
 
@@ -77,11 +78,13 @@ The frontend uses HTML5, CSS3, vanilla JavaScript modules, and Django Template L
 | Experience as JSON | `/api/experience/` | Experience records, including UUIDs and historical dates |
 | Skills | `/#skills` | Data & AI section on the home page |
 
+The original URLs above are retained for compatibility. Since Tutorial 7, the dynamic Project and Education lists use `/api/v1/projects/` and `/api/v1/education/` for reads and creation, their UUID detail routes for deletion, and their `/star/` routes for favourites. The complete versioned API and permissions are documented under Tutorial 7 below.
+
 The navigation uses named Django URLs. Education now opens its own page. Profile and Skills link to home-page sections; existing `/#education` links continue to work. Changes to an education record appear both on the dedicated page and in the home overview.
 
 ## Technologies and Development Environment
 
-The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and **SQLite** on macOS. Dependencies are listed in `requirements.txt`, including WhiteNoise and python-dotenv. That file currently leaves dependency versions unpinned, so a later installation may resolve different versions.
+The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and **SQLite** on macOS. Dependencies are listed in `requirements.txt`, including WhiteNoise and python-dotenv. Tutorial 7 adds `djangorestframework~=3.18.3`. The other existing requirements remain unpinned, so a later installation may resolve different versions. The separate Tutorial 7 preparation environment passed its tests with Python 3.12.14, Django 6.1.3 and DRF 3.18.3. The course example uses Django 5.2; this patch retains the portfolio's existing Django version rather than requiring a framework downgrade.
 
 ## Project Structure
 
@@ -92,7 +95,13 @@ The recorded local test environment uses **Python 3.13.9**, **Django 6.1**, and 
 | `main/models.py` | `Experience`, `Project`, and `Education`, including education period validation |
 | `main/forms.py` | `ProjectForm` and `EducationForm`, with explicit editable-field lists |
 | `main/views.py` | Page views, form submission handlers, filtering, and JSON/XML responses |
-| `main/permissions.py` | Shared Education owner/editor predicates and UI access context |
+| `main/permissions.py` | Shared owner/editor rules, UI access context and DRF permission classes |
+| `main/serializers.py` | Flat Project/Education representations, read-only fields and input validation |
+| `main/api_views.py` | DRF CRUD and star handlers with session authentication |
+| `main/api_urls.py` | Versioned routes in the `api` namespace |
+| `main/tests_api.py` | 13 Project and 7 Education REST/role/CSRF tests |
+| `static/js/rest.js` | Typed JSON submissions, DRF errors, and AJAX star/delete actions |
+| `tests/js/tutorial7.test.js` | REST contracts, empty 204, error handling, role controls and duplicate actions |
 | `main/tests_tutorial4.py` | Authentication, session/cookie, project-star and permission tests |
 | `main/tests_assignment4.py` | Four-role checks, Admin assignment, Education stars, API privacy and query cost |
 | `main/tests_tutorial5.py` | AJAX contracts, roles, CSRF, query cost, and text cleaning |
@@ -629,6 +638,96 @@ After applying the patch, run `python manage.py check`, `python manage.py test`,
 
 The preparation tests are recorded above; these local browser checks still need to be performed. Use a dedicated feature branch and descriptive commits for implementation/tests and documentation, then push and submit the final public GitHub **commit URL** to SCELE. The supplied PDF gives **Monday, October 5, 2026, 23:59 WIB** as the Assignment 5 deadline. It also makes completion of Tutorial 5 by **September 30, 2026, 23:59 WIB** a grading prerequisite. This README does not itself establish a SCELE submission or guarantee a score.
 
+## Tutorial 7 — Django REST Framework
+
+[Official Tutorial 7](https://pbp.cs.ui.ac.id/en/tutorial/tutorial-7.html) · [Optional Tutorial 6](https://pbp.cs.ui.ac.id/en/tutorial/tutorial-6.html)
+
+Tutorial 7 continues Tutorial 5 directly. Tutorial 6 is an optional HTMX exercise, is not a prerequisite and does not require submission. It is not claimed as implemented here. The official Tutorial 7 page gives **Wednesday, November 4, 2026, 23:59 WIB** as the submission deadline and states that Tutorial 7 is a prerequisite for Assignment 6, due **Monday, November 9, 2026, 23:59 WIB**. This implementation does not claim completion of Assignment 6.
+
+The patch was prepared against Assignment 5 commit `b5e72c2e52e240c912e6c64d7d924d547eb6f5b3` on `feature/assignment_5_education_ajax`. It uses the existing UUIDs, model fields, records, fixtures and CSS. It introduces no database schema changes and does not reload fixtures or replace existing account data. The earlier implementation sections in this README describe their respective historical stages; the current AJAX lists use the REST contract below.
+
+### Setup and implementation mapping
+
+Activate the project's existing virtual environment, install the updated requirements and check the implementation:
+
+```bash
+python -m pip install -r requirements.txt
+python manage.py migrate
+python manage.py check
+python manage.py makemigrations --check --dry-run
+python manage.py test main
+```
+
+`migrate` applies any older pending migrations on a fresh checkout. Tutorial 7 itself adds none. Existing installations should **not** reload fixtures, because that could overwrite edited portfolio data. A new checkout can use the initial-data instructions earlier in this README.
+
+`rest_framework` is registered in `INSTALLED_APPS`. `portofolio/urls.py` includes `main.api_urls` at `/api/v1/` and DRF's login/logout interface at `/api-auth/`. Every API handler explicitly uses `SessionAuthentication`. The `/api/v1/` prefix names this API contract; it does not enable a separate DRF version-negotiation mechanism. No global authentication defaults are changed.
+
+| Tutorial concept | Portfolio implementation |
+| --- | --- |
+| Project `ModelSerializer` | `ProjectSerializer` uses the real Project fields and an explicit field allowlist |
+| Description and tech stack | Existing `summary`, `contribution`, and `technologies`; no duplicate description or tech-stack columns |
+| Project URL/image examples | The existing model has neither field; no unrelated columns or migrations are introduced |
+| Computed star information | Read-only `star_count`, `is_starred`, and Project `starred_by_names`; education exposes only count and the caller's boolean |
+| Public reads, owner changes | `IsPortfolioOwnerOrReadOnly` on Project CRUD; staff status or Editor membership alone is insufficient |
+| Assignment model and Editor rule | `EducationSerializer` and `IsPortfolioOwnerOrEditorOrReadOnly` preserve the Assignment 4 rules |
+| JSON and browsable API | DRF `Response` and content negotiation; `Accept: application/json` or `?format=json` selects JSON |
+| AJAX integration | Existing responsive cards and forms use flat records, JSON POST, star POST, and DELETE without reloading the page |
+| Tests | The 13 Project API scenarios plus 7 Education scenarios live in `main/tests_api.py` |
+
+### REST endpoints and permissions
+
+| URL | Methods | Behaviour |
+| --- | --- | --- |
+| `/api/v1/projects/` | GET, HEAD, POST | Public list; trimmed, case-insensitive `?title=...`; owner-only creation |
+| `/api/v1/projects/<uuid>/` | GET, HEAD, PUT, PATCH, DELETE | Public detail; owner-only update/deletion |
+| `/api/v1/projects/<uuid>/star/` | POST | Toggle the signed-in account's own star |
+| `/api/v1/education/` | GET, HEAD, POST | Public list; existing `q`, `status` and `starred` filters; owner-only creation |
+| `/api/v1/education/<uuid>/` | GET, HEAD, PUT, PATCH, DELETE | Public detail; owner or Editor update; owner-only deletion |
+| `/api/v1/education/<uuid>/star/` | POST | Toggle the signed-in account's own star |
+| `/api-auth/login/` | GET, POST | Login for the browsable API using the existing account database |
+
+| Role | Read | Star own account | Create/delete | Update Projects | Update Education |
+| --- | --- | --- | --- | --- | --- |
+| Visitor | Yes | No | No | No | No |
+| Member / staff-only | Yes | Yes | No | No | No |
+| Editor | Yes | Yes | No | No | Yes |
+| Owner (active superuser) | Yes | Yes | Yes | Yes | Yes |
+
+Create the owner with `python manage.py createsuperuser` if there is not already one. Grant the `Editor` group through Django Admin using the existing Assignment 4 setup; public registration cannot assign roles. A missing Editor group simply grants nobody Editor access. Old full-page forms, Education's Edit link, detail pages, authentication and JSON/XML routes remain functional. Project editing is available via PUT/PATCH in the API; an additional Project edit modal is not part of this tutorial implementation.
+
+Lists return a flat JSON array and details/creation/update return a flat object: use `record.id` and `record.title`, not the earlier `record.pk` and `record.fields.title`. Project ordering still prioritizes the featured card; Education ordering and personal-favourites filtering are preserved. Each object also supplies read-only local action URLs. Searches with no matches return `[]` with 200. GET/PUT/PATCH/star succeed with 200, creation with 201, and deletion with **204 and an empty body**. Invalid input returns field errors with 400, permission/session/CSRF failures return 403, missing UUID records return 404, and unsupported methods return 405 for an otherwise authorized caller. Permission checks may reject an unauthorized request before method or object checks.
+
+PUT validates all required writable fields. PATCH validates only supplied fields while retaining omitted values. UUIDs, timestamps, computed fields, action URLs and star memberships are never client-writable. Star handlers always use `request.user`; sending another user ID has no effect. Project responses expose only the already-public star usernames; Education never returns other users' memberships or identity details.
+
+### Validation, CSRF and client behaviour
+
+DRF does not automatically run `ModelForm.clean()` or `Model.clean()`. `PlainTextModelSerializer` strips tags and surrounding whitespace from the applicable text fields before normal field validation, so required tag-only values are rejected. `EducationSerializer.validate()` combines existing values with PATCH input and runs the model's period validation. Year ranges, numeric values and URLs are also validated. JavaScript continues to escape every dynamic string and check link protocols/local paths, because old or imported records can still contain markup.
+
+`SessionAuthentication` requires a CSRF token on authenticated POST, PUT, PATCH and DELETE requests. Both page configurations obtain one with `get_token(request)`, including pages without an owner creation form. `rest.js` sends session cookies, `X-CSRFToken`, JSON content type and the expected method. Checkbox values become actual JSON booleans; an empty Education end year becomes `null`. No CSRF protection is disabled.
+
+The shared REST helper translates DRF's flat error lists into the existing inline form presentation and safely displays `detail` messages. A deletion succeeds without parsing the empty 204 response. Validation errors keep the input and popover open. Pending actions disable repeat submissions; network failures are not automatically retried, because the server may already have saved a record or toggled a star. After a successful write the current filters are retained and the list is fetched again. Cancelling a deletion sends no request. Guest stars link to Login. CSS, the featured Project card, education layout, responsive breakpoints and toast styling are retained.
+
+### Verification and local handoff
+
+Preparation on November 4 passed **139 Django tests** (119 existing plus 20 new) and **33 Node tests** (23 existing, adapted for the flat card contract, plus 10 new). These include actual enforced-CSRF session requests, owner/member/Editor restrictions, required-field errors, partial-update period validation, read-only fields, search, safe rendering, duplicate requests and empty DELETE responses. The browsable API renders and can provide a valid CSRF cookie. A negative-control run temporarily replaced the Project permission check in memory: the denial test failed with 201 instead of 403 as expected, then the original permission check was restored automatically. No deliberately broken code is included.
+
+A separate live HTTP smoke test also passed with the real portfolio fixtures: public pages and static assets (including DRF assets), actual login, authenticated JSON creation, PATCH, star toggling and DELETE. Only a temporary test record was created/deleted in that isolated database; the three fixture projects remained. Static collection succeeded.
+
+`python manage.py check`, `python manage.py makemigrations --check --dry-run` and `git diff --check` also passed. Node tests need Node 22 or newer and no npm packages:
+
+```bash
+node --test tests/js/*.test.js
+```
+
+The automated run took place in a separate checkout. Before submitting, check the actual Mac/browser and repository:
+
+1. Start `python manage.py runserver`, open Projects and Education, and hard-refresh once. Verify cards, searches, filters, navigation and the mobile layout.
+2. As a member, add/remove a star. As the owner, create a temporary record, try invalid input, cancel deletion once, then delete only that temporary record. These list actions should not reload the page.
+3. Open `/api/v1/projects/` in the browser for DRF's interface and `/api/v1/projects/?format=json` for JSON. An owner can try PATCH with `{"title": "Temporary title"}` on a temporary project detail URL. Confirm an ordinary member cannot edit it. An Editor may update Education, but may not create/delete entries or edit Projects.
+4. Run the checks above, inspect `git diff --check` and `git status`, commit and push the final branch, and submit the **final public GitHub commit URL** to SCELE before the deadline. That commit includes the complete repository snapshot and its ancestors.
+
+No new PWS deployment or SCELE submission was performed during preparation. The previously reported PWS account problem is not assumed resolved. Local tests do not verify production reachability, mobile rendering on the user's device, or a grade.
+
 ## AI Usage Disclosure
 
 I used **ChatGPT** for explanations, implementation suggestions, fixtures, tests etc.
@@ -644,6 +743,7 @@ I used **ChatGPT** for explanations, implementation suggestions, fixtures, tests
 | Assignment 4 | Continue on top of Tutorial 4 and review the appearance | ChatGPT/Codex generated the roles/stars implementation, tests and README. I subsequently applied and pushed it and reported that the appearance was correct. |
 | Tutorial 5 | Adapt the uploaded tutorial PDF to my latest code and provide a patch | ChatGPT/Codex implemented JavaScript, AJAX, validation, tests and documentation against commit `a6ee42a217d1301ce1e8dff277f84bd1c4725b7b`. The separate preparation run passed 105 Django tests and 13 JavaScript tests. I applied and pushed the implementation as `d17b5a0`; this does not by itself confirm browser verification or SCELE submission. |
 | Assignment 5 requirements | Continue with Assignment 5, then supply its PDF when the page could not be retrieved | The supplied PDF was checked against the existing Education section, A4 roles, and the exact Tutorial 5 commit `d17b5a090d652a9f2e1f5753bd84694072664544`. The Project example was adapted rather than introducing a second unrelated model. |
+| Tutorial 7 | Check whether Tutorial 6 is required, then adapt Tutorial 7 as a patch | ChatGPT/Codex read the current official pages, verified the Assignment 5 GitHub base, generated DRF serializers/views/permissions, adapted the existing JavaScript, and ran 139 Django and 33 JavaScript tests. Local Mac/browser verification, PWS deployment, committing and SCELE submission are separate user steps. |
 | Assignment 5 implementation | Produce a compatible patch with the functionality, tests, and README | ChatGPT/Codex generated Education AJAX views, shared JavaScript modules, templates/styles, 14 Django and 10 JavaScript tests, and the reflection draft. Automated preparation passed 119 Django and 23 JavaScript tests. I must still verify the actual browser behavior and understand the code before submission; these are not claimed as completed by the AI tests. |
 
 AI assistance can produce code that looks plausible without proving that it runs. Static syntax checks cannot establish database migration compatibility, successful requests, or mobile usability. I therefore checked locally rather than treating its static checks as a runtime result. Understanding the update, CSRF, and JSON flow remains my responsibility when explaining the implementation.
