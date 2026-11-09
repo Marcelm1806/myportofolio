@@ -1,4 +1,4 @@
-"""Tutorial 7's API/permission/CSRF checklist, using the real portfolio fields."""
+"""Tutorial 7 and Assignment 6: API behaviour, roles, and real CSRF checks."""
 
 import uuid
 
@@ -203,6 +203,13 @@ class EducationApiTests(ApiAccounts):
         self.detail_url = reverse("api:education_detail", args=[self.entry.pk])
         self.star_url = reverse("api:toggle_education_star", args=[self.entry.pk])
 
+    def education_state(self):
+        """Compare both records and star memberships after a rejected write."""
+        return (
+            list(Education.objects.order_by("pk").values()),
+            list(Education.starred_by.through.objects.order_by("pk").values()),
+        )
+
     def test_public_data_and_personal_filter_preserve_totals_and_privacy(self):
         self.entry.starred_by.add(self.member, self.other)
         self.assertEqual(self.client.get(self.list_url, {"starred": "1"}).data, [])
@@ -219,24 +226,56 @@ class EducationApiTests(ApiAccounts):
         self.assertEqual(self.client.get(self.list_url, {"status": "current"}).data, [])
 
     def test_roles_enforce_guest_member_staff_editor_owner_boundaries(self):
+        self.entry.starred_by.add(self.other)
+        before = self.education_state()
         for user in (None, self.member, self.staff, self.editor):
             self.authenticate(user)
-            self.assertEqual(self.client.post(self.list_url, education_data(), format="json").status_code, 403)
-            self.assertEqual(self.client.delete(self.detail_url).status_code, 403)
-            expected = 200 if user == self.editor else 403
-            self.assertEqual(self.client.patch(self.detail_url, {"degree": "Edited"}, format="json").status_code, expected)
+            self.assertEqual(self.client.get(self.list_url).status_code, 200)
+            self.assertEqual(self.client.get(self.detail_url).status_code, 200)
+            rejected = [
+                ("post", self.list_url, education_data()),
+                ("delete", self.detail_url, {}),
+            ]
+            if user != self.editor:
+                rejected.extend([
+                    ("put", self.detail_url, education_data(degree="Forbidden")),
+                    ("patch", self.detail_url, {"degree": "Forbidden"}),
+                ])
+            for method, url, data in rejected:
+                with self.subTest(user=user, method=method):
+                    response = getattr(self.client, method)(url, data, format="json")
+                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(self.education_state(), before)
+        self.authenticate(self.editor)
+        patched = self.client.patch(self.detail_url, {"degree": "Edited"}, format="json")
+        self.assertEqual(patched.status_code, 200)
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.degree, "Edited")
+        self.assertEqual(self.entry.institution, "Example University")
+        self.assertEqual(list(self.entry.starred_by.all()), [self.other])
+
         self.authenticate(self.owner)
         created = self.client.post(self.list_url, education_data(), format="json")
         self.assertEqual(created.status_code, 201)
-        deleted = self.client.delete(reverse("api:education_detail", args=[created.data["id"]]))
+        new_id = created.data["id"]
+        self.assertTrue(Education.objects.filter(pk=new_id).exists())
+        new_url = reverse("api:education_detail", args=[new_id])
+        changed = self.client.patch(new_url, {"degree": "Owner update"}, format="json")
+        self.assertEqual(changed.status_code, 200)
+        self.assertEqual(Education.objects.get(pk=new_id).degree, "Owner update")
+        deleted = self.client.delete(new_url)
         self.assertEqual((deleted.status_code, deleted.content), (204, b""))
+        self.assertFalse(Education.objects.filter(pk=new_id).exists())
+        self.assertEqual(Education.objects.count(), 1)
 
     def test_editor_update_preserves_identity_and_validates_merged_period(self):
         self.authenticate(self.editor)
+        before = self.education_state()
         for data in ({"start_year": 2024}, {"is_current": True}, {"end_year": None}):
             response = self.client.patch(self.detail_url, data, format="json")
             self.assertEqual(response.status_code, 400)
             self.assertIn("end_year", response.data)
+            self.assertEqual(self.education_state(), before)
         response = self.client.patch(self.detail_url, {
             "is_current": True, "end_year": None, "institution": " <b>New university</b> ",
             "id": str(uuid.uuid4()), "created_at": "2000-01-01T00:00:00Z",
@@ -251,6 +290,7 @@ class EducationApiTests(ApiAccounts):
 
     def test_creation_validates_years_urls_plain_text_and_period(self):
         self.authenticate(self.owner)
+        before = self.education_state()
         for data, field in (
             ({"start_year": 1899}, "start_year"), ({"end_year": 2101}, "end_year"),
             ({"end_year": 2019}, "end_year"), ({"is_current": True}, "end_year"),
@@ -260,11 +300,35 @@ class EducationApiTests(ApiAccounts):
             response = self.client.post(self.list_url, education_data(**data), format="json")
             self.assertEqual(response.status_code, 400)
             self.assertIn(field, response.data)
-        self.assertEqual(Education.objects.count(), 1)
+            self.assertEqual(self.education_state(), before)
+
+    def test_patch_cleans_text_and_ignores_client_supplied_star_state(self):
+        self.entry.starred_by.add(self.other)
+        self.authenticate(self.editor)
+        before = self.education_state()
+        for field in ("institution", "degree"):
+            with self.subTest(field=field):
+                invalid = self.client.patch(self.detail_url, {field: "<b> </b>"}, format="json")
+                self.assertEqual(invalid.status_code, 400)
+                self.assertIn(field, invalid.data)
+                self.assertEqual(self.education_state(), before)
+        result = self.client.patch(self.detail_url, {
+            "institution": " <b>New university</b> ",
+            "degree": "<em>New degree</em>", "description": "<br>",
+            "star_count": 99, "is_starred": True, "starred_by": [self.editor.pk],
+        }, format="json")
+        self.assertEqual(result.status_code, 200)
+        self.entry.refresh_from_db()
+        self.assertEqual((self.entry.institution, self.entry.degree, self.entry.description),
+                         ("New university", "New degree", ""))
+        self.assertEqual((result.data["star_count"], result.data["is_starred"]), (1, False))
+        self.assertEqual(list(self.entry.starred_by.all()), [self.other])
 
     def test_stars_require_login_ignore_other_identity_and_missing_ids_404(self):
-        self.assertEqual(self.client.post(self.star_url).status_code, 403)
         self.entry.starred_by.add(self.other)
+        before = self.education_state()
+        self.assertEqual(self.client.post(self.star_url).status_code, 403)
+        self.assertEqual(self.education_state(), before)
         self.authenticate(self.member)
         response = self.client.post(self.star_url, {"user_id": self.other.pk}, format="json")
         self.assertEqual((response.status_code, response.data["star_count"], response.data["is_starred"]), (200, 2, True))
@@ -276,14 +340,43 @@ class EducationApiTests(ApiAccounts):
 
     def test_session_csrf_and_revoked_editor_permissions(self):
         client = APIClient(enforce_csrf_checks=True)
-        client.force_login(self.editor)
-        self.assertEqual(client.patch(self.detail_url, {"degree": "No"}, format="json").status_code, 403)
+        password = "editor-csrf-test-only"
+        self.editor.set_password(password)
+        self.editor.save(update_fields=["password"])
+        self.assertTrue(client.login(username=self.editor.username, password=password))
         page = client.get(reverse("main:show_education"))
+        self.assertIn("csrftoken", client.cookies)
+        before = self.education_state()
+        rejected = client.patch(self.detail_url, {"degree": "No"}, format="json")
+        self.assertEqual(rejected.status_code, 403)
+        self.assertIn("CSRF", rejected.data["detail"])
+        self.assertEqual(self.education_state(), before)
         token = page.context["education_config"]["csrfToken"]
         self.assertEqual(client.patch(self.detail_url, {"degree": "Allowed"}, format="json", HTTP_X_CSRFTOKEN=token).status_code, 200)
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.degree, "Allowed")
         self.editor.groups.clear()
+        after = self.education_state()
         self.assertEqual(client.patch(self.detail_url, {"degree": "Revoked"}, format="json", HTTP_X_CSRFTOKEN=token).status_code, 403)
+        self.assertEqual(self.education_state(), after)
         self.assertEqual(client.post(self.star_url, {}, format="json", HTTP_X_CSRFTOKEN=token).status_code, 200)
+
+    def test_edit_dialog_is_available_only_to_editor_and_owner(self):
+        for user in (None, self.member, self.staff, self.editor, self.owner):
+            with self.subTest(user=user):
+                self.client.logout()
+                if user:
+                    self.client.force_login(user)
+                page = self.client.get(reverse("main:show_education"))
+                if user in (self.editor, self.owner):
+                    self.assertContains(page, 'id="edit-education-dialog"')
+                    self.assertContains(page, 'id="edit_education_institution"', count=1)
+                else:
+                    self.assertNotContains(page, 'id="edit-education-dialog"')
+                if user == self.owner:
+                    self.assertContains(page, 'id="id_institution"', count=1)
+                else:
+                    self.assertNotContains(page, 'id="education-form"')
 
     def test_pages_point_to_versioned_api_and_legacy_routes_remain_available(self):
         for page_name, config_name, api_name in (

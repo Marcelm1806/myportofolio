@@ -1,0 +1,11 @@
+.education-edit-fields {
+    min-inline-size: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.education-edit-note {
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}

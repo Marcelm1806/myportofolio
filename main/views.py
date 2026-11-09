@@ -350,6 +350,9 @@ def show_education(request):
     context = {
         "name": PROFILE["name"],
         "form": EducationForm(),
+        # The owner can have both forms on the same page. Keep label IDs
+        # distinct without changing the field names accepted by the API.
+        "edit_form": EducationForm(auto_id="edit_education_%s") if access["can_edit_education"] else None,
         "query": query,
         "status_filter": status,
         "starred_only": request.GET.get("starred") == "1",

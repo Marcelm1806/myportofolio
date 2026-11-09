@@ -3,6 +3,10 @@
 
 {% block title %}Education | {{ name }}{% endblock %}
 
+{% block styles %}
+    {% if can_edit_education %}<link rel="stylesheet" href="{% static 'css/assignment6.css' %}?v=20261109">{% endif %}
+{% endblock %}
+
 {% block content %}
 <section class="content-section education-section education-page" id="education" aria-labelledby="education-title">
     <div class="container">
@@ -68,9 +72,10 @@
 
 {% block overlays %}
     {% if can_manage_education %}{% include "components/education_form_modal.html" %}{% endif %}
+    {% if can_edit_education %}{% include "components/education_edit_dialog.html" with form=edit_form %}{% endif %}
 {% endblock %}
 
 {% block scripts %}
     {{ education_config|json_script:"education-config" }}
-    <script type="module" src="{% static 'js/education.js' %}?v=tutorial7-20261104"></script>
+    <script type="module" src="{% static 'js/education.js' %}?v=assignment6-20261109"></script>
 {% endblock %}

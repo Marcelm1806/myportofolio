@@ -1,7 +1,8 @@
-import { submitRestForm, bindRestCardActions } from "./rest.js?v=tutorial7-20261104";
+import { submitRestForm, bindRestCardActions } from "./rest.js?v=assignment6-20261109";
 import { createListLoader, debounce } from "./ajax.js?v=tutorial7-20261104";
-import { bindAjaxForm } from "./ajax-form.js?v=tutorial7-20261104";
-import { normalizeEducationFilters, educationEmptyMessage, renderEducationCard } from "./education-utils.js?v=tutorial7-20261104";
+import { bindAjaxForm } from "./ajax-form.js?v=assignment6-20261109";
+import { bindEducationEditor } from "./education-edit.js?v=assignment6-20261109";
+import { normalizeEducationFilters, educationEmptyMessage, renderEducationCard } from "./education-utils.js?v=assignment6-20261109";
 import { showToast } from "./toast.js?v=tutorial5-20260930";
 
 const config = JSON.parse(document.getElementById("education-config").textContent);
@@ -84,6 +85,11 @@ window.addEventListener("popstate", () => {
 
 const cardActions = bindRestCardActions({
     grid, csrfToken: config.csrfToken, refresh: searchNow, notify: showToast, fallbackFocus: searchInput,
+});
+
+bindEducationEditor({
+    grid, dialog: document.getElementById("edit-education-dialog"),
+    csrfToken: config.csrfToken, refresh: searchNow, notify: showToast, fallbackFocus: searchInput,
 });
 
 bindAjaxForm({

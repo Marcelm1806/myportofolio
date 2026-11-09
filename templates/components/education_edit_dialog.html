@@ -1,0 +1,24 @@
+<dialog id="edit-education-dialog" class="project-form-modal" aria-labelledby="edit-education-title" aria-describedby="edit-education-description">
+    <header class="project-form-modal-header">
+        <div>
+            <p class="section-kicker">Academic background</p>
+            <h2 id="edit-education-title">Edit education</h2>
+        </div>
+        <button type="button" class="popover-close" data-edit-close aria-label="Close edit form" autofocus>×</button>
+    </header>
+    <p id="edit-education-description" class="project-form-description">Update this academic entry. Fields marked * are required.</p>
+    <p data-edit-load class="education-edit-note" role="status">Loading education entry…</p>
+    <form class="project-form" method="post" hidden>
+        {% csrf_token %}
+        <p data-edit-error class="form-error-summary" role="alert" tabindex="-1" hidden></p>
+        <fieldset class="education-edit-fields" aria-label="Education details" disabled>
+            {% include "components/form_fields.html" %}
+        </fieldset>
+        <p data-edit-status class="education-edit-note" role="status">No unsaved changes.</p>
+        <div class="form-actions">
+            <button type="submit" class="button" disabled>Save changes</button>
+            <button type="button" class="button button-secondary" data-edit-restore disabled>Restore original values</button>
+            <button type="button" class="button button-secondary" data-edit-close>Cancel</button>
+        </div>
+    </form>
+</dialog>

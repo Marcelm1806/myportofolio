@@ -35,7 +35,7 @@ export function renderEducationCard(entry, config) {
     const star = config.isAuthenticated
         ? `<button type="button" class="button button-star${starred ? " is-starred" : ""}" data-rest-action="star" data-rest-id="${pk}" data-url="${localUrl(urls.star)}" aria-pressed="${starred}" aria-label="${starred ? "Unstar" : "Star"} ${institution} (${count} stars)"><span aria-hidden="true">${starred ? "★" : "☆"}</span>${starred ? "Unstar" : "Star"}<span class="star-count">${count}</span></button>`
         : `<a href="${localUrl(config.loginUrl)}" class="button button-star" aria-label="Log in to star ${institution}"><span aria-hidden="true">☆</span>Log in to star<span class="star-count">${count}</span></a>`;
-    const edit = config.canEdit ? `<a href="${localUrl(urls.edit)}" class="button button-secondary" aria-label="Edit education: ${institution}">Edit</a>` : "";
+    const edit = config.canEdit ? `<a href="${localUrl(urls.edit)}" class="button button-secondary" data-education-edit="${pk}" data-url="${localUrl(urls.api_detail)}" aria-haspopup="dialog" aria-label="Edit education: ${institution}">Edit</a>` : "";
     const remove = config.canManage ? `
         <button type="button" class="button button-danger" popovertarget="delete-education-${pk}" aria-label="Delete education: ${institution}">Delete</button>
         <div id="delete-education-${pk}" class="project-delete-modal" popover="auto" role="dialog" aria-labelledby="delete-title-${pk}" aria-describedby="delete-description-${pk}">

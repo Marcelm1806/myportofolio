@@ -1,11 +1,7 @@
 import { postForm } from "./ajax.js?v=tutorial7-20261104";
 
-/** No role-specific elements are accessed until the authorized form exists. */
-export function bindAjaxForm({ form, modal, summary, submit, url, csrfToken,
-    firstField, label, savedTitle, notify, onSuccess, send = postForm }) {
-    if (!form) return;
-    const submitLabel = submit.textContent;
-
+/** Map API errors to accessible, plain-text form feedback. */
+export function createFormFeedback(form, summary) {
     function clearErrors() {
         summary.hidden = true;
         summary.textContent = "";
@@ -43,6 +39,15 @@ export function bindAjaxForm({ form, modal, summary, submit, url, csrfToken,
         }
         summary.focus();
     }
+    return { clearErrors, displayErrors };
+}
+
+/** No role-specific elements are accessed until the authorized form exists. */
+export function bindAjaxForm({ form, modal, summary, submit, url, csrfToken,
+    firstField, label, savedTitle, notify, onSuccess, send = postForm }) {
+    if (!form) return;
+    const submitLabel = submit.textContent;
+    const { clearErrors, displayErrors } = createFormFeedback(form, summary);
 
     modal.addEventListener("toggle", event => {
         if (event.newState === "open") form.elements.namedItem(firstField)?.focus();

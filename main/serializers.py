@@ -67,8 +67,7 @@ class ProjectSerializer(PlainTextModelSerializer):
         }
 
 
-class EducationSerializer(PlainTextModelSerializer):
-    plain_text_fields = ("institution", "degree", "description")
+class EducationSerializer(serializers.ModelSerializer):
     period_label = serializers.ReadOnlyField()
     star_count = serializers.SerializerMethodField()
     is_starred = serializers.SerializerMethodField()
@@ -83,6 +82,22 @@ class EducationSerializer(PlainTextModelSerializer):
             "is_starred", "urls",
         )
         read_only_fields = ("id", "created_at", "updated_at")
+
+    @staticmethod
+    def _required_text(value, message):
+        text = strip_tags(value).strip()
+        if not text:
+            raise serializers.ValidationError(message)
+        return text
+
+    def validate_institution(self, value):
+        return self._required_text(value, "Enter an institution name, not just HTML tags.")
+
+    def validate_degree(self, value):
+        return self._required_text(value, "Enter a degree or programme, not just HTML tags.")
+
+    def validate_description(self, value):
+        return strip_tags(value).strip()
 
     def validate(self, attrs):
         # ModelSerializer does not call Model.clean(). Merge existing values so

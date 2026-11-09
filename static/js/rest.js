@@ -1,17 +1,25 @@
 import { AjaxError } from "./ajax.js?v=tutorial7-20261104";
 
-/** JSON mutations use session cookies AND CSRF; a 204 has no JSON body. */
+/** Read a JSON record, or write one with session cookies and CSRF. */
 export async function requestJson(url, { method = "POST", data, csrfToken,
-    successStatus = 200, fetchImpl = globalThis.fetch } = {}) {
+    successStatus = 200, signal, fetchImpl = globalThis.fetch } = {}) {
+    const reading = method === "GET";
+    const headers = { Accept: "application/json" };
+    if (!reading) {
+        headers["Content-Type"] = "application/json";
+        headers["X-CSRFToken"] = csrfToken;
+    }
     let response;
     try {
         response = await fetchImpl(url, {
-            method, credentials: "same-origin",
-            headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRFToken": csrfToken },
+            method, credentials: "same-origin", cache: "no-store", headers, signal,
             ...(data === undefined ? {} : { body: JSON.stringify(data) }),
         });
-    } catch {
-        throw new AjaxError("Connection lost. Refresh the list before retrying; the change may have reached the server.");
+    } catch (error) {
+        if (signal?.aborted) throw error;
+        throw new AjaxError(reading
+            ? "The entry could not be loaded. Check your connection and try again."
+            : "Connection lost. Refresh the list before retrying; the change may have reached the server.");
     }
     if (response.status === 204 && successStatus === 204) return null;
     const body = await response.json().catch(() => null);
@@ -25,7 +33,8 @@ export async function requestJson(url, { method = "POST", data, csrfToken,
         const firstError = Object.values(errors).flat()[0]?.message;
         const fallback = response.status === 403
             ? "Your session or permission has changed. Reload the page and sign in with an authorized account."
-            : "The change could not be saved. Please refresh the list and try again.";
+            : reading ? "The entry could not be loaded. Please try again."
+                : "The change could not be saved. Please refresh the list and try again.";
         const message = firstError ? `Please correct the highlighted fields. ${firstError}`
             : typeof body?.detail === "string" ? body.detail : fallback;
         throw new AjaxError(message, errors);
