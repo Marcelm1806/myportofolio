@@ -64,10 +64,12 @@ class Project(models.Model):
         editable=False,
     )
     title = models.CharField(max_length=255)
-    organization = models.CharField(max_length=255)
+    organization = models.CharField(max_length=255, blank=True)
     context_label = models.CharField(max_length=255, blank=True)
     summary = models.TextField()
-    contribution = models.TextField()
+    contribution = models.TextField(blank=True)
+    project_url = models.URLField(max_length=500, blank=True)
+    project_image_url = models.URLField(max_length=500, blank=True)
     technologies = models.TextField(
         blank=True,
         help_text="Enter one technology or topic per line.",

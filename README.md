@@ -6,6 +6,23 @@ The project started as a static About Me page. Tutorial 2 introduced database-ba
 
 [Assignment 1 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-1.html) · [Assignment 2 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-2.html) · [Assignment 3 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-3.html) · [Assignment 4 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-4.html) · [Assignment 5 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-5.html) · [Assignment 6 specification](https://pbp.cs.ui.ac.id/en/assignments/individual/tugas-6.html)
 
+## Tutorial 10: Flutter client and token authentication
+
+The public project list is shared by the website and the [Flutter app](https://github.com/Marcelm1806/myportofolio_mobile/tree/feature/tutorial_10_integration). Run `python -m pip install -r requirements.txt` and `python manage.py migrate` before starting Django. This installs DRF's token table and applies `main.0007_mobile_project_fields`; existing projects retain their data.
+
+| Endpoint | Request | Result |
+| --- | --- | --- |
+| `GET /api/v1/projects/` | No login required | Flat JSON list, including existing portfolio projects. |
+| `POST /api/v1/auth/token/` | JSON `username`, `password` | `200` and a DRF token for valid credentials. |
+| `POST /api/v1/projects/` | Header `Authorization: Token <token>` and project JSON | Owner: `201` and the saved row. Guest/invalid token: `401`. Signed-in non-owner: `403`. |
+| `POST /api/v1/auth/logout/` | The same token header | `204`, empty body; that token is no longer valid. Browser sessions remain separate. |
+
+The mobile input uses `title`, `description`, `tech_stack`, `project_url` and optional `project_image_url`. The serializer maps description and stack onto `summary` and `technologies`. Mobile entries can omit organization/contribution; the original web editor still requires them. Two URL columns store the actual links, blank on older rows. The original rich Project API and the Education role rules are retained.
+
+Chrome on localhost can send API requests from its development port. Android emulator requests to `10.0.2.2` are accepted in development. Other origins aren't automatically allowed; for a deployed frontend, set `CORS_ALLOWED_ORIGINS` to its exact HTTPS origin (comma-separated for multiple origins). The app sends tokens in the authorization header, not in URLs. Session-based browser writes still require CSRF. DRF's stock token is per account: revoking it also signs out other clients using the same token.
+
+The automated tests include token issue/revocation, mobile project persistence, permissions, validation, legacy rows, browser sessions and CORS preflight. AI assistance was used to prepare the implementation, documentation, and tests; the matching mobile app was also exercised against a fresh local database.
+
 ## Student Information
 
 - **Name:** Marcel Mikula
@@ -669,13 +686,13 @@ python manage.py test main
 
 `migrate` applies any older pending migrations on a fresh checkout. Tutorial 7 itself adds none. Existing installations should **not** reload fixtures, because that could overwrite edited portfolio data. A new checkout can use the initial-data instructions earlier in this README.
 
-`rest_framework` is registered in `INSTALLED_APPS`. `portofolio/urls.py` includes `main.api_urls` at `/api/v1/` and DRF's login/logout interface at `/api-auth/`. Every API handler explicitly uses `SessionAuthentication`. The `/api/v1/` prefix names this API contract; it does not enable a separate DRF version-negotiation mechanism. No global authentication defaults are changed.
+`rest_framework` is registered in `INSTALLED_APPS`. `portofolio/urls.py` includes `main.api_urls` at `/api/v1/` and DRF's login/logout interface at `/api-auth/`. At Tutorial 7 the handlers used only `SessionAuthentication`; Tutorial 10 also accepts DRF tokens. The `/api/v1/` prefix names this API contract; it does not enable a separate DRF version-negotiation mechanism. Tutorial 10 now configures token and session authentication together.
 
 | Tutorial concept | Portfolio implementation |
 | --- | --- |
 | Project `ModelSerializer` | `ProjectSerializer` uses the real Project fields and an explicit field allowlist |
 | Description and tech stack | Existing `summary`, `contribution`, and `technologies`; no duplicate description or tech-stack columns |
-| Project URL/image examples | The existing model has neither field; no unrelated columns or migrations are introduced |
+| Project URL/image examples | Not present at Tutorial 7; Tutorial 10 adds both link fields for the mobile client |
 | Computed star information | Read-only `star_count`, `is_starred`, and Project `starred_by_names`; education exposes only count and the caller's boolean |
 | Public reads, owner changes | `IsPortfolioOwnerOrReadOnly` on Project CRUD; staff status or Editor membership alone is insufficient |
 | Assignment model and Editor rule | `EducationSerializer` and `IsPortfolioOwnerOrEditorOrReadOnly` preserve the Assignment 4 rules |

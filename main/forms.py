@@ -7,6 +7,11 @@ from main.models import Education, Project
 class ProjectForm(forms.ModelForm):
     """Create projects using the portfolio's existing model fields."""
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("organization", "contribution"):
+            self.fields[name].required = True  # The full web editor collects both.
+
     def clean(self):
         cleaned_data = super().clean()
         # Both the regular form and the AJAX endpoint store plain text.

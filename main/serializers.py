@@ -25,7 +25,22 @@ class PlainTextModelSerializer(serializers.ModelSerializer):
         return super().to_internal_value(data)
 
 
+class MobileProjectInput(PlainTextModelSerializer):
+    """Store the five Flutter fields on the same Project rows used by the website."""
+
+    plain_text_fields = ("title", "description", "tech_stack")
+    description = serializers.CharField(source="summary")
+    tech_stack = serializers.CharField(source="technologies")
+
+    class Meta:
+        model = Project
+        fields = ("title", "description", "tech_stack", "project_url", "project_image_url")
+        extra_kwargs = {"project_url": {"required": True, "allow_blank": False}}
+
+
 class ProjectSerializer(PlainTextModelSerializer):
+    description = serializers.CharField(source="summary", read_only=True)
+    tech_stack = serializers.CharField(source="technologies", read_only=True)
     plain_text_fields = (
         "title", "organization", "context_label", "summary", "contribution",
         "technologies", "award",
@@ -42,9 +57,13 @@ class ProjectSerializer(PlainTextModelSerializer):
             "id", "title", "organization", "context_label", "summary",
             "contribution", "technologies", "award", "is_featured",
             "display_order", "technology_list", "star_count", "is_starred",
-            "starred_by_names", "urls",
+            "starred_by_names", "urls", "description", "tech_stack", "project_url", "project_image_url",
         )
         read_only_fields = ("id",)
+        extra_kwargs = {
+            "organization": {"required": True, "allow_blank": False},
+            "contribution": {"required": True, "allow_blank": False},
+        }
 
     def get_star_count(self, obj):
         return obj.starred_by.count()

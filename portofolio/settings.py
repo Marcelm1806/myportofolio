@@ -39,6 +39,26 @@ ALLOWED_HOSTS = [
     "marcel-mikula-myportofolio.pws.cs.ui.ac.id",
 ]
 
+# Android's emulator reaches the development server through this host alias.
+if not PRODUCTION:
+    ALLOWED_HOSTS.append("10.0.2.2")
+
+CORS_URLS_REGEX = r"^/api/v1/"
+CORS_ALLOWED_ORIGINS = [
+    origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+CORS_ALLOWED_ORIGIN_REGEXES = [] if PRODUCTION else [
+    r"^http://(?:localhost|127\.0\.0\.1)(?::\d+)?$",
+]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+}
+
 # Application definition
 
 # The public HTTPS origin used when forms are submitted on PWS.
@@ -54,11 +74,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
+    'corsheaders',
     'main'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

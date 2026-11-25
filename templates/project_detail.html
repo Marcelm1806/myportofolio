@@ -16,7 +16,7 @@
         </a>
 
         <header class="section-heading">
-            <p class="section-kicker">{{ project.organization }}</p>
+            {% if project.organization %}<p class="section-kicker">{{ project.organization }}</p>{% endif %}
 
             <h1 id="project-title">{{ project.title }}</h1>
 
@@ -34,8 +34,10 @@
         {% endif %}
 
         <div class="project-detail-body">
-            <h2>My contribution</h2>
-            <p>{{ project.contribution|linebreaksbr }}</p>
+            {% if project.contribution %}
+                <h2>My contribution</h2>
+                <p>{{ project.contribution|linebreaksbr }}</p>
+            {% endif %}
 
             {% with technologies=project.technology_list %}
                 {% if technologies %}

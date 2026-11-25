@@ -93,7 +93,7 @@ class ProjectApiTests(ApiAccounts):
                 ("post", self.list_url, project_data()), ("put", self.detail_url, project_data()),
                 ("patch", self.detail_url, {"title": "Forbidden"}), ("delete", self.detail_url, {}),
             ):
-                self.assertEqual(getattr(self.client, method)(url, data, format="json").status_code, 403)
+                self.assertEqual(getattr(self.client, method)(url, data, format="json").status_code, 401 if user is None else 403)
         self.assertEqual(list(Project.objects.values()), before)
 
     def test_05_owner_create_returns_201_and_clean_flat_record(self):
@@ -133,7 +133,7 @@ class ProjectApiTests(ApiAccounts):
 
     def test_08_star_toggles_only_session_users_membership(self):
         self.project.starred_by.add(self.other)
-        self.assertEqual(self.client.post(self.star_url, {}, format="json").status_code, 403)
+        self.assertEqual(self.client.post(self.star_url, {}, format="json").status_code, 401)
         self.authenticate(self.member)
         response = self.client.post(self.star_url, {"user_id": self.other.pk}, format="json")
         self.assertEqual(response.status_code, 200)
@@ -244,7 +244,7 @@ class EducationApiTests(ApiAccounts):
             for method, url, data in rejected:
                 with self.subTest(user=user, method=method):
                     response = getattr(self.client, method)(url, data, format="json")
-                    self.assertEqual(response.status_code, 403)
+                    self.assertEqual(response.status_code, 401 if user is None else 403)
                     self.assertEqual(self.education_state(), before)
         self.authenticate(self.editor)
         patched = self.client.patch(self.detail_url, {"degree": "Edited"}, format="json")
@@ -327,7 +327,7 @@ class EducationApiTests(ApiAccounts):
     def test_stars_require_login_ignore_other_identity_and_missing_ids_404(self):
         self.entry.starred_by.add(self.other)
         before = self.education_state()
-        self.assertEqual(self.client.post(self.star_url).status_code, 403)
+        self.assertEqual(self.client.post(self.star_url).status_code, 401)
         self.assertEqual(self.education_state(), before)
         self.authenticate(self.member)
         response = self.client.post(self.star_url, {"user_id": self.other.pk}, format="json")
